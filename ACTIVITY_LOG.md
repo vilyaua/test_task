@@ -23,5 +23,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 20:27  | Added NAT probe automation                  | Introduced probe instances/user data (`infra/test_probes.tf`), variables, and outputs plus doc updates. | ~12 min    |
 | 2025-10-19 20:45  | Implemented GitHub Actions workflows        | Added Terraform validate/deploy/destroy workflows and verification script for NAT checks. | ~18 min    |
 | 2025-10-19 20:48  | Added workflow documentation snippets       | Updated `docs/github-actions-pipeline.md` with YAML and script snippets for quick reference. | ~3 min     |
+| 2025-10-19 20:56  | Documented AWS integration snippets         | Extended `docs/github-actions-pipeline.md` with trust policy, permissions, and secrets commands. | ~4 min     |
+| 2025-10-19 20:58  | Added AWS CLI setup commands                | Documented role creation and policy attachment bash steps in `docs/github-actions-pipeline.md`. | ~2 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

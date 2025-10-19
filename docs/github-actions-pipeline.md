@@ -4,8 +4,81 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
 ## 1. Required AWS Integration
 - **OIDC trust:** Create an IAM role (e.g., `github-actions-terraform`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/ravenpack-nat:ref:refs/heads/main`).
+
+  ```json
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Federated": "arn:aws:iam::165820787764:oidc-provider/token.actions.githubusercontent.com"
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+          "StringEquals": {
+            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+            "token.actions.githubusercontent.com:sub": "repo:vilyaua/ravenpack-nat:ref:refs/heads/main"
+          }
+        }
+      }
+    ]
+  }
+  ```
+
+  ```bash
+  cat > github-actions-trust.json <<'JSON'
+  { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Federated": "arn:aws:iam::165820787764:oidc-provider/token.actions.githubusercontent.com" }, "Action": "sts:AssumeRoleWithWebIdentity", "Condition": { "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com", "token.actions.githubusercontent.com:sub": "repo:vilyaua/ravenpack-nat:ref:refs/heads/main" } } } ] }
+  JSON
+
+  aws iam create-role \
+    --role-name github-actions-terraform \
+    --assume-role-policy-document file://github-actions-trust.json \
+    --description "GitHub Actions OIDC role for Terraform"
+  ```
+
 - **Permissions:** Attach a policy that covers Terraform operations (VPC, EC2, ELB/NLB, Auto Scaling, Lambda, CloudWatch, SSM, IAM PassRole). Reuse or extend the deployment role from `docs/terraform-role-setup.md`.
+
+  ```json
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "autoscaling:*",
+          "lambda:*",
+          "cloudwatch:*",
+          "logs:*",
+          "ssm:*",
+          "iam:PassRole",
+          "iam:CreateServiceLinkedRole"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }
+  ```
+
+  ```bash
+  cat > github-actions-policy.json <<'JSON'
+  { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": [ "ec2:*", "elasticloadbalancing:*", "autoscaling:*", "lambda:*", "cloudwatch:*", "logs:*", "ssm:*", "iam:PassRole", "iam:CreateServiceLinkedRole" ], "Resource": "*" } ] }
+  JSON
+
+  aws iam put-role-policy \
+    --role-name github-actions-terraform \
+    --policy-name GitHubActionsTerraformAccess \
+    --policy-document file://github-actions-policy.json
+  ```
+
 - **GitHub secrets:** Store the role ARN and default region as `AWS_ROLE_TO_ASSUME` and `AWS_REGION`.
+
+  ```bash
+  gh secret set AWS_ROLE_TO_ASSUME --body "arn:aws:iam::165820787764:role/github-actions-terraform"
+  gh secret set AWS_REGION --body "us-east-1"
+  ```
 
 ## 2. Workflows
 1. **`terraform-validate.yml` (push + PR):**
