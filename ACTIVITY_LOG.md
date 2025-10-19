@@ -21,5 +21,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 20:13  | Fixed Mermaid syntax errors                | Adjusted `docs/test-environment.mmd` note syntax for compatibility with Mermaid renderer. | ~3 min     |
 | 2025-10-19 20:20  | Outlined GitHub Actions pipeline           | Authored `docs/github-actions-pipeline.md` detailing validate/deploy/destroy workflows and OIDC integration. | ~7 min     |
 | 2025-10-19 20:27  | Added NAT probe automation                  | Introduced probe instances/user data (`infra/test_probes.tf`), variables, and outputs plus doc updates. | ~12 min    |
+| 2025-10-19 20:45  | Implemented GitHub Actions workflows        | Added Terraform validate/deploy/destroy workflows and verification script for NAT checks. | ~18 min    |
+| 2025-10-19 20:48  | Added workflow documentation snippets       | Updated `docs/github-actions-pipeline.md` with YAML and script snippets for quick reference. | ~3 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.
