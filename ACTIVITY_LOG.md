@@ -34,5 +34,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 21:53  | Enabled VPC flow logs & updated probes      | Added CloudWatch flow logs resources, probe SG description, and doc note on tfsec. | ~5 min     |
 | 2025-10-19 22:05  | Hardened flow log IAM policy and KMS key    | Scoped IAM resources, added KMS key policy, and ensured tfsec passes. | ~6 min     |
 | 2025-10-19 22:38  | Reused existing KMS alias in Terraform      | Documented alias usage and wired `logs_kms_key_arn` variable for env-specific configuration. | ~2 min     |
+| 2025-10-19 22:41  | Added OIDC permissions to workflows         | Granted `id-token` permissions for GitHub Actions AWS authentication. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

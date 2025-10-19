@@ -25,6 +25,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     environment:
       name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
     env:
