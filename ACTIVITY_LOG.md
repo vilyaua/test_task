@@ -26,5 +26,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 20:56  | Documented AWS integration snippets         | Extended `docs/github-actions-pipeline.md` with trust policy, permissions, and secrets commands. | ~4 min     |
 | 2025-10-19 20:58  | Added AWS CLI setup commands                | Documented role creation and policy attachment bash steps in `docs/github-actions-pipeline.md`. | ~2 min     |
 | 2025-10-19 21:21  | Fixed workflow cache path                   | Updated Terraform workflows to use workspace cache instead of runner.temp to satisfy GitHub Actions parser. | ~2 min     |
+| 2025-10-19 21:24  | Pinned tfsec action version                 | Updated `terraform-validate` workflow to use `aquasecurity/tfsec-action@v1.0.0`. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.
