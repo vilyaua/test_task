@@ -3,6 +3,17 @@
 This guide outlines the GitHub Actions setup for validating, deploying, testing, and cleaning the NAT gateway alternative infrastructure while minimizing AWS spend.
 
 ## 1. Required AWS Integration
+- **OIDC provider (run once per account):**
+
+  ```bash
+  aws iam create-open-id-connect-provider \
+    --url https://token.actions.githubusercontent.com \
+    --client-id-list sts.amazonaws.com \
+    --thumbprint-list cf23df2207d99a74fbe169e3eba035e633b65d94
+  ```
+
+  If the provider already exists, AWS returns `EntityAlreadyExists`.
+
 - **OIDC trust:** Create an IAM role (e.g., `github-actions-terraform`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/ravenpack-nat:ref:refs/heads/main`).
 
   ```json
