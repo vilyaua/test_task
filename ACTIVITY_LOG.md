@@ -36,5 +36,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 22:38  | Reused existing KMS alias in Terraform      | Documented alias usage and wired `logs_kms_key_arn` variable for env-specific configuration. | ~2 min     |
 | 2025-10-19 22:41  | Added OIDC permissions to workflows         | Granted `id-token` permissions for GitHub Actions AWS authentication. | ~1 min     |
 | 2025-10-19 22:48  | Documented GitHub OIDC provider setup       | Added `aws iam create-open-id-connect-provider` to pipeline guide. | ~1 min     |
+| 2025-10-19 23:14  | Added role update command to GH guide        | Included `update-assume-role-policy` example for existing Terraform role. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

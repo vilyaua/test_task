@@ -14,7 +14,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   If the provider already exists, AWS returns `EntityAlreadyExists`.
 
-- **OIDC trust:** Create an IAM role (e.g., `github-actions-terraform`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/ravenpack-nat:ref:refs/heads/main`).
+- **OIDC trust:** Create (or update) an IAM role (e.g., `github-actions-terraform`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/test_task:ref:refs/heads/main`).
 
   ```json
   {
@@ -29,7 +29,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
         "Condition": {
           "StringEquals": {
             "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-            "token.actions.githubusercontent.com:sub": "repo:vilyaua/ravenpack-nat:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub": "repo:vilyaua/test_task:ref:refs/heads/main"
           }
         }
       }
@@ -39,13 +39,34 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   ```bash
   cat > github-actions-trust.json <<'JSON'
-  { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Principal": { "Federated": "arn:aws:iam::165820787764:oidc-provider/token.actions.githubusercontent.com" }, "Action": "sts:AssumeRoleWithWebIdentity", "Condition": { "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com", "token.actions.githubusercontent.com:sub": "repo:vilyaua/ravenpack-nat:ref:refs/heads/main" } } } ] }
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Federated": "arn:aws:iam::165820787764:oidc-provider/token.actions.githubusercontent.com"
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+          "StringEquals": {
+            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+            "token.actions.githubusercontent.com:sub": "repo:vilyaua/test_task:ref:refs/heads/main"
+          }
+        }
+      }
+    ]
+  }
   JSON
 
   aws iam create-role \
     --role-name github-actions-terraform \
     --assume-role-policy-document file://github-actions-trust.json \
-    --description "GitHub Actions OIDC role for Terraform"
+    --description "GitHub Actions OIDC role for Terraform" || true
+
+  aws iam update-assume-role-policy \
+    --role-name github-actions-terraform \
+    --policy-document file://github-actions-trust.json
   ```
 
 - **Permissions:** Attach a policy that covers Terraform operations (VPC, EC2, ELB/NLB, Auto Scaling, Lambda, CloudWatch, SSM, IAM PassRole). Reuse or extend the deployment role from `docs/terraform-role-setup.md`.
