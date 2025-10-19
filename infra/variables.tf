@@ -51,3 +51,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "aws_profile" {
+  description = "Shared credentials profile used for initial authentication before assuming the deployment role."
+  type        = string
+  default     = "terraform"
+}
