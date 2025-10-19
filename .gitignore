@@ -1,0 +1,39 @@
+# Terraform local state & caches
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*.tfvars
+*.tfvars.json
+!.terraform.lock.hcl
+!infra/environments/test/vars.tfvars
+
+# Terraform tooling artifacts
+terraform.rc
+.terraformrc
+terraform.tfplan
+*.tfplan
+
+# Python / virtual environments (for Lambda helpers)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# OS and editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.*.sw?
+.idea/
+.vscode/
+
+# Generated documentation assets
+docs/*.png
+docs/*.svg

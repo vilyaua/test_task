@@ -1,5 +1,6 @@
 provider "aws" {
-  region = "us-east-1"
+  profile = var.aws_profile
+  region  = "eu-central-1"
 
   assume_role {
     role_arn     = "arn:aws:iam::165820787764:role/nat-alternative-terraform"

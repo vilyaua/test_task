@@ -2,11 +2,8 @@
 
 Follow these steps to provision the test environment using the Terraform configuration under `infra/`.
 
-1. **Select the Terraform profile**  
-   Ensure the CLI session uses the `terraform` profile (or whichever profile can assume the deployment role):
-   ```bash
-   export AWS_PROFILE=terraform
-   ```
+1. **Select credentials**  
+   The provider defaults to the `terraform` shared-credentials profile. Export `AWS_PROFILE=terraform` if you rely on environment variables, or pass `-var 'aws_profile=<profile>'` to override.
 
 2. **Initialize Terraform**  
    From the `infra/` directory, download providers and set up the local state:
