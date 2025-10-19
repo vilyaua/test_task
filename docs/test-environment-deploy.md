@@ -26,7 +26,9 @@ Follow these steps to provision the test environment using the Terraform configu
 5. **Post-deploy checks**  
    - Confirm the NAT instances are running in the public subnets and have Elastic IPs.  
    - Verify private route tables point `0.0.0.0/0` to the NAT instance in the same AZ.  
+   - Probe instances (`t3.nano`) in private subnets run automatic connectivity tests and self-terminate; inspect `/var/log/nat-probe.log` via the console if needed.
    - Use `aws ec2 describe-route-tables` and `aws ec2 describe-instances` if you need CLI confirmation.
+   - Reference `docs/test-environment.mmd` for a Mermaid diagram of the expected topology.
 
 6. **Destroy when finished**  
    Tear down the test environment after validation to avoid ongoing costs:

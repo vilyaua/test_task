@@ -1,0 +1,33 @@
+# GitHub Actions CI/CD Blueprint
+
+This guide outlines the GitHub Actions setup for validating, deploying, testing, and cleaning the NAT gateway alternative infrastructure while minimizing AWS spend.
+
+## 1. Required AWS Integration
+- **OIDC trust:** Create an IAM role (e.g., `github-actions-terraform`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/ravenpack-nat:ref:refs/heads/main`).
+- **Permissions:** Attach a policy that covers Terraform operations (VPC, EC2, ELB/NLB, Auto Scaling, Lambda, CloudWatch, SSM, IAM PassRole). Reuse or extend the deployment role from `docs/terraform-role-setup.md`.
+- **GitHub secrets:** Store the role ARN and default region as `AWS_ROLE_TO_ASSUME` and `AWS_REGION`.
+
+## 2. Workflows
+1. **`terraform-validate.yml` (push + PR):**
+   - `terraform fmt -check`, `tflint`, `tfsec`.
+   - `terraform validate` with plugin caching.
+   - `terraform plan -var-file=environments/test/vars.tfvars` and upload the plan as an artifact + PR comment.
+2. **`terraform-deploy.yml` (main + manual dispatch):**
+   - Assume the AWS role via OIDC, run `init`, `plan`, `apply`.
+   - After apply, execute NAT connectivity probes (see Section 3).
+   - Upload logs and metrics; fail the job if probes fail.
+3. **`terraform-destroy.yml` (nightly + manual):**
+   - Runs `terraform destroy` with the same var-file to remove the test stack.
+   - Also available via workflow dispatch for ad-hoc cleanup.
+
+Use workflow reuse (`workflow_call`) so `deploy` and `destroy` share init logic. Cache providers with `hashicorp/setup-terraform` and set `TF_PLUGIN_CACHE_DIR`.
+
+## 3. Test Scenario Execution
+- Launch lightweight probe instances in private subnets (t3.nano) using Terraform; user data runs outbound checks (curl to public endpoints, DNS lookups).
+- Collect probe logs via SSM or CloudWatch Logs; the workflow downloads and inspects them for success markers.
+- Optionally add synthetic tests (AWS SSM Session Manager automation or AWS Systems Manager RunCommand) triggered from the workflow for additional verification.
+
+## 4. Cost Control & Safety Nets
+- Require manual approval (GitHub environment) before production deploys.
+- Schedule nightly destroy to tear down idle stacks.
+- Add AWS Budget alerts routed to Slack or email for unexpected charges.
