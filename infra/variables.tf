@@ -57,3 +57,15 @@ variable "aws_profile" {
   type        = string
   default     = "terraform"
 }
+
+variable "enable_probes" {
+  description = "Whether to launch NAT connectivity probe instances in private subnets."
+  type        = bool
+  default     = true
+}
+
+variable "probe_instance_type" {
+  description = "Instance type used for connectivity probe instances."
+  type        = string
+  default     = "t3.nano"
+}

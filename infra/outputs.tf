@@ -22,3 +22,8 @@ output "nat_eip_addresses" {
   description = "Elastic IPs allocated to NAT instances."
   value       = { for az, eip in aws_eip.nat : az => eip.public_ip }
 }
+
+output "probe_instance_ids" {
+  description = "Connectivity probe instances keyed by AZ."
+  value       = { for az, instance in aws_instance.probe : az => instance.id }
+}
