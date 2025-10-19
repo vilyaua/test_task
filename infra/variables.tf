@@ -53,9 +53,15 @@ variable "tags" {
 }
 
 variable "aws_profile" {
-  description = "Shared credentials profile used for initial authentication before assuming the deployment role."
+  description = "Optional shared credentials profile for local workflows. Leave empty when using OIDC in CI."
   type        = string
   default     = "terraform"
+}
+
+variable "aws_region" {
+  description = "AWS region targeted by Terraform deployments."
+  type        = string
+  default     = "us-east-1"
 }
 
 variable "enable_probes" {
