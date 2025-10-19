@@ -1,8 +1,3 @@
-Perfect 👍 — here’s the **enhanced `README.md`** with embedded **Mermaid architecture diagram** and example **GitHub Actions CI/CD pipelines** (ready to use or demo in the repo).
-
----
-
-````markdown
 # Cloud SysAdmin Technical Exercise — 2025-09
 
 ## Exercise: Design a Highly Available AWS-Based NAT Gateway Alternative
