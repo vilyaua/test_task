@@ -18,7 +18,7 @@ jobs:
   destroy:
     runs-on: ubuntu-latest
     env:
-      TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-cache
       TF_VAR_aws_profile: ""
       TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
       TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
