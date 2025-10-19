@@ -28,5 +28,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 21:21  | Fixed workflow cache path                   | Updated Terraform workflows to use workspace cache instead of runner.temp to satisfy GitHub Actions parser. | ~2 min     |
 | 2025-10-19 21:24  | Pinned tfsec action version                 | Updated `terraform-validate` workflow to use `aquasecurity/tfsec-action@v1.0.0`. | ~1 min     |
 | 2025-10-19 21:27  | Ensured TF cache dirs exist in workflows    | Added `mkdir -p` and runner temp caching in Terraform workflows to avoid init failures. | ~2 min     |
+| 2025-10-19 21:35  | Normalized Terraform var-file formatting    | Ran `terraform fmt` on `infra/environments/test/vars.tfvars` so CI fmt check passes. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.
