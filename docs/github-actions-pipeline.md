@@ -108,7 +108,31 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   ```bash
   cat > github-actions-policy.json <<'JSON'
-  { "Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": [ "ec2:*", "elasticloadbalancing:*", "autoscaling:*", "lambda:*", "cloudwatch:*", "logs:*", "ssm:*", "iam:PassRole", "iam:CreateServiceLinkedRole" ], "Resource": "*" } ] }
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "autoscaling:*",
+          "lambda:*",
+          "cloudwatch:*",
+          "logs:*",
+          "ssm:*",
+          "iam:PassRole",
+          "iam:CreateServiceLinkedRole"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Resource": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+      }
+    ]
+  }
   JSON
 
   aws iam put-role-policy \
