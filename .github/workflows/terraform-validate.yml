@@ -67,8 +67,6 @@ jobs:
       - name: Terraform Plan
         working-directory: infra
         env:
-          TF_VAR_aws_profile: ""
-        env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
           TF_VAR_aws_profile: ""
         run: terraform plan -var-file=environments/test/vars.tfvars -out=tfplan
