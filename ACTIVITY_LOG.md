@@ -29,5 +29,10 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 21:24  | Pinned tfsec action version                 | Updated `terraform-validate` workflow to use `aquasecurity/tfsec-action@v1.0.0`. | ~1 min     |
 | 2025-10-19 21:27  | Ensured TF cache dirs exist in workflows    | Added `mkdir -p` and runner temp caching in Terraform workflows to avoid init failures. | ~2 min     |
 | 2025-10-19 21:35  | Normalized Terraform var-file formatting    | Ran `terraform fmt` on `infra/environments/test/vars.tfvars` so CI fmt check passes. | ~1 min     |
+| 2025-10-19 21:38  | Documented local validation steps           | Added `docs/local-development.md` describing fmt/lint/validate commands for contributors. | ~3 min     |
+| 2025-10-19 21:50  | Added tfsec suppressions for NAT SG         | Annotated NAT security group egress with inline tfsec ignores and rationale. | ~2 min     |
+| 2025-10-19 21:53  | Enabled VPC flow logs & updated probes      | Added CloudWatch flow logs resources, probe SG description, and doc note on tfsec. | ~5 min     |
+| 2025-10-19 22:05  | Hardened flow log IAM policy and KMS key    | Scoped IAM resources, added KMS key policy, and ensured tfsec passes. | ~6 min     |
+| 2025-10-19 22:38  | Reused existing KMS alias in Terraform      | Documented alias usage and wired `logs_kms_key_arn` variable for env-specific configuration. | ~2 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.
