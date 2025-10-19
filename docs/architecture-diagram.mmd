@@ -1,0 +1,39 @@
+graph TD
+    subgraph AWS[VPC]
+        direction LR
+        subgraph AZ1[Availability Zone A]
+            direction TB
+            P1[(Private Subnet A)] -->|0.0.0.0/0| RT1[Route Table A]
+            RT1 -->|Targets| NLB[NLB - Cross-AZ Static IPs]
+            NLB -->|Targets| NAT1[NAT Instance A\nAuto Scaling Group]
+            NAT1 --> IGW[Internet Gateway]
+            Lambda[Lambda Control Plane]
+            Lambda -. SSM Documents .-> NAT1
+        end
+        subgraph AZ2[Availability Zone B]
+            direction TB
+            P2[(Private Subnet B)] -->|0.0.0.0/0| RT2[Route Table B]
+            RT2 -->|Standby Target| NLB
+            NLB -->|Targets| NAT2[NAT Instance B\nAuto Scaling Group]
+            NAT2 --> IGW
+            Lambda -. Lifecycle Hooks .-> NAT2
+        end
+        subgraph AZ3[Availability Zone C]
+            direction TB
+            P3[(Private Subnet C)] -->|0.0.0.0/0| RT3[Route Table C]
+            RT3 -->|Failover Target| NLB
+            NLB -->|Targets| NAT3[NAT Instance C\nAuto Scaling Group]
+            NAT3 --> IGW
+            Lambda -. Health Probes .-> NAT3
+        end
+        Lambda -. Route Failover .-> RT1
+        Lambda -. Route Failover .-> RT2
+        Lambda -. Route Failover .-> RT3
+        FlowLogs[VPC Flow Logs] --> S3Logs[S3 / CloudWatch Logs]
+    end
+    Lambda -. Metrics .-> CloudWatch[(CloudWatch Alarms)]
+    CloudWatch -->|Alarm Events| Lambda
+    NAT1 -->|Egress Traffic| IGW
+    NAT2 -->|Egress Traffic| IGW
+    NAT3 -->|Egress Traffic| IGW
+    Lambda -->|Lifecycle| EventBridge[(EventBridge Rules)]
