@@ -11,8 +11,6 @@ on:
         description: 'Path to Terraform var-file'
         default: 'environments/test/vars.tfvars'
         required: true
-  schedule:
-    - cron: '0 3 * * *'
 
 jobs:
   destroy:
@@ -21,6 +19,7 @@ jobs:
       id-token: write
       contents: read
     env:
+      TF_IN_AUTOMATION: true
       TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
       TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
     steps:
@@ -50,4 +49,4 @@ jobs:
         working-directory: infra
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: terraform destroy -input=false -auto-approve -var-file=${{ env.TARGET_VAR_FILE }}
+        run: terraform destroy -input=false -auto-approve -lock-timeout=5m -var-file=${{ env.TARGET_VAR_FILE }}

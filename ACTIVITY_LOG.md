@@ -46,5 +46,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 00:58  | Switched default Terraform region           | Set `aws_region` default to `eu-central-1` and validated configuration. | ~1 min     |
 | 2025-10-20 02:02  | Paused development after AWS cleanup        | Manual teardown in progress; development halted until cleanup completes. | —          |
 | 2025-10-20 07:09  | Restored default AWS profile behaviour      | Emptied `aws_profile` default so env-based auth works without extra vars. | ~1 min     |
+| 2025-10-20 07:15  | Added S3 backend & workflow refinements     | Created `infra/backend.tf`, documented remote state, and updated CI pipelines to manual deploy/destroy flow. | ~6 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

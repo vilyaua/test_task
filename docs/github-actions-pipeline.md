@@ -151,7 +151,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
   ```
 
 ## 2. Workflows
-1. **`terraform-validate.yml` (push + PR):**
+1. **`terraform-validate.yml` (push to `main` + PR):**
    - `terraform fmt -check`, `tflint`, `tfsec`.
    - `terraform validate` with plugin caching.
    - `terraform plan -var-file=environments/test/vars.tfvars` and upload the plan as an artifact + PR comment.
@@ -178,10 +178,10 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
            working-directory: infra
    ```
 
-2. **`terraform-deploy.yml` (main + manual dispatch):**
-   - Assume the AWS role via OIDC, run `init`, `plan`, `apply`.
-   - After apply, execute NAT connectivity probes (see Section 3).
-   - Upload logs and metrics; fail the job if probes fail.
+2. **`terraform-deploy.yml` (manual dispatch):**
+   - Triggered by the “Run workflow” button; defaults to the `test` environment.
+   - Runs `terraform init → plan → apply` using the remote S3 backend, then executes NAT connectivity probes (Section 3) and captures outputs.
+   - Destroys the stack automatically unless `destroy_after=false` is supplied.
 
    ```yaml
    # .github/workflows/terraform-deploy.yml
@@ -204,9 +204,9 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
            working-directory: infra
    ```
 
-3. **`terraform-destroy.yml` (nightly + manual):**
-   - Runs `terraform destroy` with the same var-file to remove the test stack.
-   - Also available via workflow dispatch for ad-hoc cleanup.
+3. **`terraform-destroy.yml` (manual dispatch):**
+   - Provides an explicit “destroy everything” button using the remote backend.
+   - Accepts environment/var-file inputs identical to the deploy workflow.
 
    ```yaml
    # .github/workflows/terraform-destroy.yml

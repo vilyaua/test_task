@@ -6,6 +6,12 @@ Use this checklist to validate changes before opening a pull request or pushing 
 - Install Terraform ≥ 1.6 and TFLint ≥ 0.50.
 - Authenticate with AWS using the `terraform` profile or via OIDC tokens (see `docs/terraform-role-setup.md`).
 - Export `AWS_PROFILE=terraform` or configure `infra/providers.tf` variables accordingly.
+- Ensure remote state is initialised:
+  ```bash
+  cd infra
+  terraform init -migrate-state
+  ```
+  (Migrates local `terraform.tfstate` into the S3 backend defined in `backend.tf`.)
 
 ## 2. Formatting & Linting
 Run from the repository root:
@@ -25,7 +31,7 @@ tflint --init
 tflint
 
 # tfsec (security scanning)
-tfsec infra
+tfsec
 ```
 
 Fix warnings such as unused locals or data sources before committing.

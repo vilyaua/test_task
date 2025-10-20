@@ -1,11 +1,6 @@
 name: Terraform Deploy
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'infra/**'
-      - '.github/workflows/terraform-deploy.yml'
   workflow_dispatch:
     inputs:
       destroy_after:
@@ -28,6 +23,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      TF_IN_AUTOMATION: true
     environment:
       name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
     env:
@@ -64,7 +61,7 @@ jobs:
         working-directory: infra
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: terraform plan -input=false -var-file=${{ env.TARGET_VAR_FILE }} -out=tfplan
+        run: terraform plan -input=false -lock-timeout=5m -var-file=${{ env.TARGET_VAR_FILE }} -out=tfplan
 
       - name: Terraform Apply
         working-directory: infra
@@ -89,4 +86,4 @@ jobs:
         working-directory: infra
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: terraform destroy -input=false -auto-approve -var-file=${{ env.TARGET_VAR_FILE }}
+        run: terraform destroy -input=false -auto-approve -lock-timeout=5m -var-file=${{ env.TARGET_VAR_FILE }}
