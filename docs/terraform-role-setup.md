@@ -13,13 +13,7 @@ aws dynamodb create-table \
   --billing-mode PAY_PER_REQUEST
 
 # Dedicated KMS key for VPC flow logs (reused by all environments)
-aws kms create-key \
-  --region eu-central-1 \
-  --profile default \
-  --description "KMS key for RavenPack NAT flow logs" \
-  --key-usage ENCRYPT_DECRYPT \
-  --origin AWS_KMS \
-  --policy '$(cat <<"JSON"
+cat > kms-flowlogs-policy.json <<'JSON'
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -51,7 +45,13 @@ aws kms create-key \
   ]
 }
 JSON
- )'
+
+aws kms create-key \
+  --profile default \
+  --region eu-central-1 \
+  --description "KMS key for RavenPack NAT flow logs" \
+  --key-usage ENCRYPT_DECRYPT \
+  --policy file://kms-flowlogs-policy.json
 
 aws kms enable-key-rotation \
   --region eu-central-1 \
@@ -75,7 +75,12 @@ cat > trust-policy.json <<'JSON'
   "Statement": [
     {
       "Effect": "Allow",
-      "Principal": { "AWS": "arn:aws:iam::165820787764:user/terraform" },
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::165820787764:user/terraform",
+          "arn:aws:iam::165820787764:role/github-actions-terraform"
+        ]
+      },
       "Action": "sts:AssumeRole",
       "Condition": { "StringEquals": { "sts:ExternalId": "terraform-nat-build" } }
     }
@@ -92,6 +97,11 @@ aws iam create-role \
   --assume-role-policy-document file://trust-policy.json \
   --description "Terraform role for NAT alternative deployment" \
   --max-session-duration 10800
+
+# Update trust policy if the role already exists
+aws iam update-assume-role-policy \
+  --role-name nat-alternative-terraform \
+  --policy-document file://trust-policy.json
 ```
 
 ## 2. Attach Deployment Permissions
