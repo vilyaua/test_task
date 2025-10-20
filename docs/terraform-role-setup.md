@@ -116,3 +116,4 @@ aws kms put-key-policy \
 ```
 
 Ensure `infra/policies/kms-flowlogs-policy.json` matches the pattern Terraform uses (see `data.aws_iam_policy_document.logs_kms` for the expected ARN).
+> Shortcut: run `./infra/scripts/bootstrap.sh --profile terraform-role --skip-iam` to reuse the Terraform init/plan flow once IAM policies are in place.

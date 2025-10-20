@@ -97,33 +97,81 @@ CW -.-> EC2B
 ## 🧮 Project Structure
 
 ```bash
-aws-nat-gateway-alternative/
-│
+.
 ├── README.md
 ├── docs/
 │   ├── architecture-diagram.mmd
-│   ├── architecture-diagram.png
-│   └── design-notes.md
-│
+│   ├── design-notes.md
+│   └── github-actions-pipeline.md
 ├── infra/
-│   ├── main.tf / main.py           # Terraform or Pulumi
+│   ├── backend.tf
+│   ├── backend-test.hcl
+│   ├── backend-prod.hcl
+│   ├── main.tf
 │   ├── variables.tf
 │   ├── outputs.tf
-│   └── scripts/
-│       ├── bootstrap.sh
-│       ├── failover-handler.sh
-│       └── cloudwatch-metrics.py
-│
-├── .github/
-│   └── workflows/
-│       ├── test.yml
-│       ├── deploy-test.yml
-│       └── deploy-prod.yml
-│
-└── environments/
-    ├── test/
-    └── prod/
+│   ├── scripts/
+│   │   └── verify_nat.sh
+│   └── infra/policies/
+│       ├── terraform-role-trust.json
+│       ├── nat-alternative-terraform-policy.json
+│       ├── terraform-user-policy.json
+│       ├── terraform-state-policy.json
+│       ├── kms-flowlogs-policy.json
+│       ├── github-actions-trust.json
+│       └── github-actions-policy.json
+└── .github/workflows/                # currently disabled while iterating locally
 ```
+## 🚀 Quick Start (manual execution)
+> Shortcut: `./infra/scripts/bootstrap.sh --profile terraform-role --env test` will reapply policies (unless `--skip-iam`) and run Terraform plan/apply with the correct backend/var files.
+
+
+1. **Configure AWS profiles**
+   - Add the `terraform` IAM user and your admin keys to `~/.aws/credentials`.
+   - Add the assume-role profile to `~/.aws/config`:
+     ```ini
+     [profile terraform-role]
+     role_arn = arn:aws:iam::165820787764:role/nat-alternative-terraform
+     source_profile = terraform
+     external_id = terraform-nat-build
+     region = eu-central-1
+     ```
+2. **Seed IAM/KMS/S3/DynamoDB (one-time per account)**
+   - Review `infra/policies/*.json`, adjust ARNs if needed, then run the commands in `docs/terraform-role-setup.md`.
+3. **Bootstrap Terraform remote state**
+   ```bash
+   cd infra
+   AWS_PROFILE=terraform-role terraform init -migrate-state \
+     -backend-config=backend-test.hcl
+   ```
+4. **Plan / Apply**
+   ```bash
+   AWS_PROFILE=terraform-role terraform plan \
+     -var-file=environments/test/vars.tfvars
+
+   AWS_PROFILE=terraform-role terraform apply \
+     -var-file=environments/test/vars.tfvars
+   ```
+5. **Validate deployment**
+   ```bash
+   AWS_PROFILE=terraform-role ./scripts/verify_nat.sh test
+   ```
+
+Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
+
+## 🎬 Demo & Automation Roadmap
+
+- **Terraform-first demo** – use Terraform to deploy the full stack in a sandbox account, then run `verify_nat.sh` to confirm NAT health and routing.
+- **Traffic probes** – extend probe user-data or SSM automation to generate curl/iperf traffic, publish latency/packet-loss metrics, and store traces for demo dashboards.
+- **Lambdas & maintenance** – implement the Lambda functions described in `docs/design-notes.md` (`nat-health-probe`, `nat-route-failover`, `config-guard`, etc.) to automate failover, configuration drift checks, and probe orchestration.
+- **Suggested demo flow**
+  1. `terraform apply` in a clean account.
+  2. Run `verify_nat.sh`, show CloudWatch metrics/flow logs.
+  3. Trigger synthetic traffic via probes; present dashboards/alerts.
+  4. Manually stop a NAT instance and demonstrate Lambda-driven failover once implemented.
+
+See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda roadmap.
+
 
 ---
 

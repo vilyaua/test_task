@@ -52,6 +52,8 @@ terraform plan -var-file=environments/test/vars.tfvars
 ```
 Review the plan output and ensure only intended changes are present.
 
+> Tip: `./scripts/bootstrap.sh --profile terraform-role --env test` combines the policy reapply + Terraform init/plan flow described above. Use `--skip-iam` to skip the IAM step when policies are unchanged.
+
 ## 4. Assume the Terraform role locally
 - For day-to-day work, create an AWS CLI profile that assumes `nat-alternative-terraform` from either your admin user or the `terraform` IAM user. Add the following to `~/.aws/config`:
   ```ini

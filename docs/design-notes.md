@@ -80,4 +80,13 @@ All Lambdas share a logging layer (CloudWatch Logs, structured JSON) and emit me
 - Add AWS Network Firewall or third-party appliances behind the NLB for deep packet inspection.
 - Integrate GuardDuty findings to automatically isolate compromised instances.
 - Evaluate Gateway Load Balancer as an alternative for traffic steering if adding advanced security appliances.
-
+## 12. Demo & Automation Roadmap
+- **Terraform-first provisioning:** Use the backend configs (`backend-test.hcl`, `backend-prod.hcl`) and role-based profiles to deploy the entire stack reproducibly. Capture plan/apply outputs as demo artefacts.
+- **Probe-driven traffic testing:** Automate probe instances via SSM Automation or Lambda to generate outbound curl/iperf runs, publish metrics (latency, success rate) to CloudWatch, and store traces in S3 for analysis.
+- **Lambda control plane:** Implement the Lambda functions outlined above (`nat-health-probe`, `nat-route-failover`, `config-guard`, `asg-lifecycle-handler`). These should: 1) orchestrate probe tests, 2) react to alarms by re-pointing routes/NLB targets, 3) enforce instance configuration, and 4) clean up stale resources (terminated probes/NATs).
+- **Demo walkthrough:**
+  1. `terraform apply` in a sandbox account.
+  2. Run `./scripts/verify_nat.sh <env>` and display the results alongside CloudWatch metrics.
+  3. Trigger the synthetic probe workflow and review generated metrics/logs.
+  4. Simulate a failure (stop a NAT instance) to demonstrate automated failover once Lambdas are in place.
+- **Next milestones:** integrate Flow Log analysis (Athena/QuickSight dashboards), build automated teardown (`terraform destroy`) job, and document runbooks for on-call engineers.
