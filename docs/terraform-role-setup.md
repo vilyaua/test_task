@@ -57,6 +57,41 @@ aws kms enable-key-rotation \
   --region eu-central-1 \
   --profile default \
   --key-id <kms-key-id-from-previous-command>
+
+# Bucket policy allowing the deployment role to manage state objects
+cat > terraform-state-policy.json <<'JSON'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+      },
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::terraform-state-ravenpack"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+      },
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::terraform-state-ravenpack/envs/*/terraform.tfstate"
+    }
+  ]
+}
+JSON
+
+aws s3api put-bucket-policy \
+  --bucket terraform-state-ravenpack \
+  --policy file://terraform-state-policy.json
 ```
 
 Record the returned KMS key ARN and pass it to Terraform with `-var "logs_kms_key_arn=<arn>"` (or set it in the appropriate tfvars file). This single key can be shared across all environments within the account; no need to create one per environment.
