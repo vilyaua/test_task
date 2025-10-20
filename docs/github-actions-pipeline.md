@@ -55,15 +55,15 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
         },
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
+          "StringEquals": {
+            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+          },
           "StringLike": {
             "token.actions.githubusercontent.com:sub": [
               "repo:vilyaua/test_task:ref:refs/heads/*",
               "repo:vilyaua/test_task:ref:refs/tags/*",
               "repo:vilyaua/test_task:pull_request"
             ]
-          },
-          "StringEquals": {
-            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
           }
         }
       }
