@@ -1,89 +1,10 @@
-name: Terraform Deploy
+name: Terraform Deploy (disabled)
 
-on:
-  workflow_dispatch:
-    inputs:
-      destroy_after:
-        description: 'Run terraform destroy after verification to avoid costs'
-        type: choice
-        options: [ "true", "false" ]
-        default: "true"
-      environment:
-        description: 'Target environment label'
-        default: 'test'
-        required: true
-      var_file:
-        description: 'Path to Terraform var-file'
-        default: 'environments/test/vars.tfvars'
-        required: true
+on: []
 
 jobs:
-  deploy:
+  placeholder:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    env:
-      TF_IN_AUTOMATION: true
-    environment:
-      name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
-    env:
-      TF_VAR_aws_profile: ""
-      TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
-      TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
-      AUTO_DESTROY: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.destroy_after == 'false' && 'false' || 'true' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.13.3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          role-duration-seconds: 3600
-
-      - name: Terraform Init
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: |
-          mkdir -p "$TF_PLUGIN_CACHE_DIR"
-          terraform init -input=false
-
-      - name: Terraform Plan
-        id: plan
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: terraform plan -input=false -lock-timeout=5m -var-file=${{ env.TARGET_VAR_FILE }} -out=tfplan
-
-      - name: Terraform Apply
-        working-directory: infra
-        run: terraform apply -input=false -auto-approve tfplan
-
-      - name: Capture Terraform Outputs
-        working-directory: infra
-        run: terraform output -json > terraform-outputs.json
-
-      - name: Verify NAT connectivity
-        working-directory: infra
-        run: ./scripts/verify_nat.sh "${TARGET_ENV}"
-
-      - name: Upload Outputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-outputs
-          path: infra/terraform-outputs.json
-
-      - name: Terraform Destroy (optional)
-        if: env.AUTO_DESTROY == 'true'
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: terraform destroy -input=false -auto-approve -lock-timeout=5m -var-file=${{ env.TARGET_VAR_FILE }}
+      - name: Workflow disabled
+        run: echo "terraform-deploy workflow temporarily disabled"

@@ -122,6 +122,28 @@ cat > trust-policy.json <<'JSON'
   ]
 }
 JSON
+
+# Limit the IAM user `terraform` to assuming this role only
+cat > terraform-user-policy.json <<'JSON'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::165820787764:role/nat-alternative-terraform",
+      "Condition": {
+        "StringEquals": { "sts:ExternalId": "terraform-nat-build" }
+      }
+    }
+  ]
+}
+JSON
+
+aws iam put-user-policy \
+  --user-name terraform \
+  --policy-name TerraformAssumeRoleOnly \
+  --policy-document file://terraform-user-policy.json
 ```
 
 Create the role and cap the session duration to three hours.
@@ -157,52 +179,50 @@ cat > permissions-policy.json <<'JSON'
         "logs:*",
         "cloudwatch:*",
         "iam:CreateServiceLinkedRole",
-         "iam:GetRole",
-         "iam:PassRole",
-         "ssm:*",
-         "iam:CreateRole",
-         "iam:PutRolePolicy"
-       ],
-       "Resource": "*"
-     },
-     {
-       "Effect": "Allow",
-       "Action": "iam:CreateServiceLinkedRole",
-       "Resource": "*",
-       "Condition": {
-         "StringEquals": {
-           "iam:AWSServiceName": [
-             "elasticloadbalancing.amazonaws.com",
-             "autoscaling.amazonaws.com"
-           ]
-         }
-       }
-     },
-     {
-       "Effect": "Allow",
-       "Action": [
-         "s3:ListBucket"
-       ],
-       "Resource": "arn:aws:s3:::terraform-state-ravenpack"
-     },
-     {
-       "Effect": "Allow",
-       "Action": [
-         "s3:GetObject",
-         "s3:PutObject",
-         "s3:DeleteObject"
-       ],
-       "Resource": "arn:aws:s3:::terraform-state-ravenpack/envs/*/terraform.tfstate"
-     },
-     {
-       "Effect": "Allow",
-       "Action": [
-         "dynamodb:DescribeTable",
-         "dynamodb:GetItem",
-         "dynamodb:PutItem",
-         "dynamodb:DeleteItem"
-       ],
-       "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
+        "iam:GetRole",
+        "iam:PassRole",
+        "ssm:*",
+        "iam:CreateRole",
+        "iam:PutRolePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": [
+            "elasticloadbalancing.amazonaws.com",
+            "autoscaling.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::terraform-state-ravenpack"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::terraform-state-ravenpack/envs/*/terraform.tfstate"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem"
+      ],
+      "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
      }
    ]
 }

@@ -1,52 +1,10 @@
-name: Terraform Destroy
+name: Terraform Destroy (disabled)
 
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment label'
-        default: 'test'
-        required: true
-      var_file:
-        description: 'Path to Terraform var-file'
-        default: 'environments/test/vars.tfvars'
-        required: true
+on: []
 
 jobs:
-  destroy:
+  placeholder:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    env:
-      TF_IN_AUTOMATION: true
-      TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
-      TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.13.3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Terraform Init
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: |
-          mkdir -p "$TF_PLUGIN_CACHE_DIR"
-          terraform init -input=false
-
-      - name: Terraform Destroy
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: terraform destroy -input=false -auto-approve -lock-timeout=5m -var-file=${{ env.TARGET_VAR_FILE }}
+      - name: Workflow disabled
+        run: echo "terraform-destroy workflow temporarily disabled"

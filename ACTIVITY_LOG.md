@@ -48,5 +48,9 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 07:09  | Restored default AWS profile behaviour      | Emptied `aws_profile` default so env-based auth works without extra vars. | ~1 min     |
 | 2025-10-20 07:15  | Added S3 backend & workflow refinements     | Created `infra/backend.tf`, documented remote state, and updated CI pipelines to manual deploy/destroy flow. | ~6 min     |
 | 2025-10-20 11:16  | Documented remote state IAM permissions      | Expanded role policy snippet to include S3/DynamoDB access for backend. | ~2 min     |
+| 2025-10-20 11:40  | Disabled CI workflows & enhanced local docs  | Temporarily disabled GH Actions and expanded local setup guidance. | ~3 min     |
+| 2025-10-20 18:27  | Clarified AWS profile setup                  | Updated local docs to use IAM user `terraform` as source profile. | ~2 min     |
+| 2025-10-20 18:35  | Removed provider assume-role dependency      | Provider now uses supplied profile creds; updated docs accordingly. | ~2 min     |
+| 2025-10-20 18:50  | Added backend config files                   | Created `infra/backend-test.hcl`/`backend-prod.hcl` and documented usage. | ~2 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

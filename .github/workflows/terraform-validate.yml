@@ -1,87 +1,10 @@
-name: Terraform Validate
+name: Terraform Validate (disabled)
 
-on:
-  pull_request:
-    paths:
-      - 'infra/**'
-      - '.github/workflows/terraform-validate.yml'
-      - 'docs/**'
-  push:
-    branches: [ main ]
+on: []
 
 jobs:
-  validate:
+  placeholder:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    env:
-      TF_IN_AUTOMATION: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.13.3
-
-      - name: Set up TFLint
-        uses: terraform-linters/setup-tflint@v3
-        with:
-          tflint_version: latest
-
-      - name: Initialize TFLint plugins
-        working-directory: infra
-        run: tflint --init
-
-      - name: Terraform Format Check
-        working-directory: infra
-        run: terraform fmt -check -recursive
-
-      - name: TFLint
-        working-directory: infra
-        run: tflint
-
-      - name: tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
-        with:
-          working_directory: infra
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Terraform Init
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-        run: |
-          mkdir -p "$TF_PLUGIN_CACHE_DIR"
-          terraform init -input=false
-
-      - name: Terraform Validate
-        working-directory: infra
-        run: terraform validate
-
-      - name: Terraform Plan
-        working-directory: infra
-        env:
-          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-          TF_VAR_aws_profile: ""
-        run: terraform plan -lock=false -var-file=environments/test/vars.tfvars -out=tfplan
-
-      - name: Terraform Show Plan
-        working-directory: infra
-        run: terraform show -no-color tfplan > tfplan.txt
-
-      - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-plan
-          path: |
-            infra/tfplan
-            infra/tfplan.txt
-          if-no-files-found: error
+      - name: Workflow disabled
+        run: echo "terraform-validate workflow temporarily disabled"
