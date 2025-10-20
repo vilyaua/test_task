@@ -41,5 +41,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 23:29  | Added sts:AssumeRole permission to GH docs   | Ensured GitHub role can assume `nat-alternative-terraform`. | ~1 min     |
 | 2025-10-19 23:38  | Added policy update note to GH docs         | Documented reusing `put-role-policy` for existing inline policy. | ~1 min     |
 | 2025-10-20 00:27  | Clarified Terraform role trust policy       | Documented dual principals (user + GH Actions) and update command. | ~2 min     |
+| 2025-10-20 00:46  | Added environment claim to GH trust docs    | Allowed `repo:...:environment:*` in trust policy snippets. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

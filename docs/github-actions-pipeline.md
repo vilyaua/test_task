@@ -31,6 +31,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
             "token.actions.githubusercontent.com:sub": [
               "repo:vilyaua/test_task:ref:refs/heads/*",
               "repo:vilyaua/test_task:ref:refs/tags/*",
+              "repo:vilyaua/test_task:environment:*",
               "repo:vilyaua/test_task:pull_request"
             ]
           },
@@ -62,6 +63,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
             "token.actions.githubusercontent.com:sub": [
               "repo:vilyaua/test_task:ref:refs/heads/*",
               "repo:vilyaua/test_task:ref:refs/tags/*",
+              "repo:vilyaua/test_task:environment:*",
               "repo:vilyaua/test_task:pull_request"
             ]
           }
