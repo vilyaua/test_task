@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:*",
+        "elasticloadbalancing:*",
+        "autoscaling:*",
+        "lambda:*",
+        "cloudwatch:*",
+        "logs:*",
+        "ssm:*",
+        "iam:PassRole",
+        "iam:CreateServiceLinkedRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+    }
+  ]
+}
