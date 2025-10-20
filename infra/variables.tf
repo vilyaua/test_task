@@ -61,7 +61,7 @@ variable "aws_profile" {
 variable "aws_region" {
   description = "AWS region targeted by Terraform deployments."
   type        = string
-  default     = "us-east-1"
+  default     = "eu-central-1"
 }
 
 variable "enable_probes" {

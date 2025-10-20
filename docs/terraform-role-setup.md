@@ -125,7 +125,9 @@ cat > permissions-policy.json <<'JSON'
         "iam:GetRole",
         "iam:PassRole",
         "ssm:*",
-        "s3:*"
+        "s3:*",
+        "iam:CreateRole",
+        "iam:PutRolePolicy"
       ],
       "Resource": "*"
     },
