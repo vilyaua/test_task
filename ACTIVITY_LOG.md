@@ -44,5 +44,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 00:46  | Added environment claim to GH trust docs    | Allowed `repo:...:environment:*` in trust policy snippets. | ~1 min     |
 | 2025-10-20 00:53  | Extended Terraform role IAM permissions     | Added create role/policy actions so flow-log IAM resources can be managed. | ~1 min     |
 | 2025-10-20 00:58  | Switched default Terraform region           | Set `aws_region` default to `eu-central-1` and validated configuration. | ~1 min     |
+| 2025-10-20 02:02  | Paused development after AWS cleanup        | Manual teardown in progress; development halted until cleanup completes. | —          |
+| 2025-10-20 07:09  | Restored default AWS profile behaviour      | Emptied `aws_profile` default so env-based auth works without extra vars. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

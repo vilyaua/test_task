@@ -55,7 +55,7 @@ variable "tags" {
 variable "aws_profile" {
   description = "Optional shared credentials profile for local workflows. Leave empty when using OIDC in CI."
   type        = string
-  default     = "terraform"
+  default     = ""
 }
 
 variable "aws_region" {
