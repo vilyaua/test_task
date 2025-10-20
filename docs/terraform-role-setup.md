@@ -122,40 +122,63 @@ cat > permissions-policy.json <<'JSON'
         "logs:*",
         "cloudwatch:*",
         "iam:CreateServiceLinkedRole",
-        "iam:GetRole",
-        "iam:PassRole",
-        "ssm:*",
-        "s3:*",
-        "iam:CreateRole",
-        "iam:PutRolePolicy"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:CreateServiceLinkedRole",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:AWSServiceName": [
-            "elasticloadbalancing.amazonaws.com",
-            "autoscaling.amazonaws.com"
-          ]
-        }
-      }
-    }
-  ]
+         "iam:GetRole",
+         "iam:PassRole",
+         "ssm:*",
+         "iam:CreateRole",
+         "iam:PutRolePolicy"
+       ],
+       "Resource": "*"
+     },
+     {
+       "Effect": "Allow",
+       "Action": "iam:CreateServiceLinkedRole",
+       "Resource": "*",
+       "Condition": {
+         "StringEquals": {
+           "iam:AWSServiceName": [
+             "elasticloadbalancing.amazonaws.com",
+             "autoscaling.amazonaws.com"
+           ]
+         }
+       }
+     },
+     {
+       "Effect": "Allow",
+       "Action": [
+         "s3:ListBucket"
+       ],
+       "Resource": "arn:aws:s3:::terraform-state-ravenpack"
+     },
+     {
+       "Effect": "Allow",
+       "Action": [
+         "s3:GetObject",
+         "s3:PutObject",
+         "s3:DeleteObject"
+       ],
+       "Resource": "arn:aws:s3:::terraform-state-ravenpack/envs/*/terraform.tfstate"
+     },
+     {
+       "Effect": "Allow",
+       "Action": [
+         "dynamodb:DescribeTable",
+         "dynamodb:GetItem",
+         "dynamodb:PutItem",
+         "dynamodb:DeleteItem"
+       ],
+       "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
+     }
+   ]
 }
 JSON
-```
 
-Attach the inline policy to the role:
-
-```bash
 aws iam put-role-policy \
   --role-name nat-alternative-terraform \
   --policy-name TerraformNATPolicy \
   --policy-document file://permissions-policy.json
+
+# Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```
 
 ## 3. Configure Terraform to Assume the Role
