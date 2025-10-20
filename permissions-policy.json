@@ -1,35 +1,41 @@
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:*",
-        "elasticloadbalancing:*",
-        "autoscaling:*",
-        "lambda:*",
-        "logs:*",
-        "cloudwatch:*",
-        "iam:CreateServiceLinkedRole",
-        "iam:GetRole",
-        "iam:PassRole",
-        "ssm:*",
-        "s3:*"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:CreateServiceLinkedRole",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:AWSServiceName": [
-            "elasticloadbalancing.amazonaws.com",
-            "autoscaling.amazonaws.com"
-          ]
+  "RoleName": "nat-alternative-terraform",
+  "PolicyName": "TerraformNATPolicy",
+  "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "autoscaling:*",
+          "lambda:*",
+          "logs:*",
+          "cloudwatch:*",
+          "iam:CreateServiceLinkedRole",
+          "iam:GetRole",
+          "iam:PassRole",
+          "ssm:*",
+          "s3:*",
+          "iam:CreateRole",
+          "iam:PutRolePolicy"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": "iam:CreateServiceLinkedRole",
+        "Resource": "*",
+        "Condition": {
+          "StringEquals": {
+            "iam:AWSServiceName": [
+              "elasticloadbalancing.amazonaws.com",
+              "autoscaling.amazonaws.com"
+            ]
+          }
         }
       }
-    }
-  ]
+    ]
+  }
 }
