@@ -8,12 +8,12 @@ on:
         required: true
         default: 'test'
       auto_destroy:
-        description: 'Destroy after running demo (true/false)'
+        description: 'Destroy after demo (true/false)'
         required: true
         default: 'true'
 
 jobs:
-  deploy:
+  demo:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
