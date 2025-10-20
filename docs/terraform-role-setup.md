@@ -12,86 +12,25 @@ aws dynamodb create-table \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST
 
-# Dedicated KMS key for VPC flow logs (reused by all environments)
-cat > kms-flowlogs-policy.json <<'JSON'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "EnableRootAccountAccess",
-      "Effect": "Allow",
-      "Principal": { "AWS": "arn:aws:iam::165820787764:root" },
-      "Action": "kms:*",
-      "Resource": "*"
-    },
-    {
-       "Sid": "AllowCloudWatchLogsEncryption",
-       "Effect": "Allow",
-       "Principal": { "Service": "logs.eu-central-1.amazonaws.com" },
-       "Action": [
-         "kms:Encrypt*",
-         "kms:Decrypt",
-         "kms:ReEncrypt*",
-         "kms:GenerateDataKey*",
-         "kms:DescribeKey"
-       ],
-       "Resource": "*",
-       "Condition": {
-         "StringLike": {
-           "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/vpc/nat-alternative-*"
-         }
-       }
-    }
-  ]
-}
-JSON
+# Dedicated KMS key for VPC flow logs (reused by all environments). The template lives at `infra/policies/kms-flowlogs-policy.json`; edit the ARNs if necessary before running the command below.
 
 aws kms create-key \
   --profile default \
   --region eu-central-1 \
   --description "KMS key for RavenPack NAT flow logs" \
   --key-usage ENCRYPT_DECRYPT \
-  --policy file://kms-flowlogs-policy.json
+  --policy file://infra/policies/kms-flowlogs-policy.json
 
 aws kms enable-key-rotation \
   --region eu-central-1 \
   --profile default \
   --key-id <kms-key-id-from-previous-command>
 
-# Bucket policy allowing the deployment role to manage state objects
-cat > terraform-state-policy.json <<'JSON'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
-      },
-      "Action": [
-        "s3:ListBucket"
-      ],
-      "Resource": "arn:aws:s3:::terraform-state-ravenpack"
-    },
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
-      },
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject"
-      ],
-      "Resource": "arn:aws:s3:::terraform-state-ravenpack/envs/*/terraform.tfstate"
-    }
-  ]
-}
-JSON
-
+# Bucket policy allowing the deployment role to manage state objects. Update `infra/policies/terraform-state-policy.json` if your ARNs differ, then apply it:
+```bash
 aws s3api put-bucket-policy \
   --bucket terraform-state-ravenpack \
-  --policy file://terraform-state-policy.json
+  --policy file://infra/policies/terraform-state-policy.json
 ```
 
 Record the returned KMS key ARN and pass it to Terraform with `-var "logs_kms_key_arn=<arn>"` (or set it in the appropriate tfvars file). This single key can be shared across all environments within the account; no need to create one per environment.
@@ -101,49 +40,13 @@ Record the returned KMS key ARN and pass it to Terraform with `-var "logs_kms_ke
 Use this guide to provision an IAM role that allows the Terraform user `arn:aws:iam::165820787764:user/terraform` to deploy the NAT gateway alternative infrastructure.
 
 ## 1. Create the Trust Policy
-Save the trust policy that restricts `sts:AssumeRole` to the Terraform user (replace the external ID if needed).
+Save the trust policy that restricts `sts:AssumeRole` to the Terraform user (replace the external ID if needed) and keep the IAM user limited to that role. The JSON templates live under `infra/policies/` and can be adjusted before you run the commands below.
 
 ```bash
-cat > trust-policy.json <<'JSON'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": { "AWS": "arn:aws:iam::165820787764:user/terraform" },
-      "Action": "sts:AssumeRole",
-      "Condition": { "StringEquals": { "sts:ExternalId": "terraform-nat-build" } }
-    },
-    {
-      "Effect": "Allow",
-      "Principal": { "AWS": "arn:aws:iam::165820787764:role/github-actions-terraform" },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-JSON
-
-# Limit the IAM user `terraform` to assuming this role only
-cat > terraform-user-policy.json <<'JSON'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Resource": "arn:aws:iam::165820787764:role/nat-alternative-terraform",
-      "Condition": {
-        "StringEquals": { "sts:ExternalId": "terraform-nat-build" }
-      }
-    }
-  ]
-}
-JSON
-
 aws iam put-user-policy \
   --user-name terraform \
   --policy-name TerraformAssumeRoleOnly \
-  --policy-document file://terraform-user-policy.json
+  --policy-document file://infra/policies/terraform-user-policy.json
 ```
 
 Create the role and cap the session duration to three hours.
@@ -151,87 +54,24 @@ Create the role and cap the session duration to three hours.
 ```bash
 aws iam create-role \
   --role-name nat-alternative-terraform \
-  --assume-role-policy-document file://trust-policy.json \
+  --assume-role-policy-document file://infra/policies/terraform-role-trust.json \
   --description "Terraform role for NAT alternative deployment" \
   --max-session-duration 10800
 
 # Update trust policy if the role already exists
 aws iam update-assume-role-policy \
   --role-name nat-alternative-terraform \
-  --policy-document file://trust-policy.json
+  --policy-document file://infra/policies/terraform-role-trust.json
 ```
 
 ## 2. Attach Deployment Permissions
 Start with a broad policy that covers VPC networking, load balancers, Lambda, observability, and IAM pass-role requirements. Tighten resources once the Terraform modules are finalized.
 
 ```bash
-cat > permissions-policy.json <<'JSON'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:*",
-        "elasticloadbalancing:*",
-        "autoscaling:*",
-        "lambda:*",
-        "logs:*",
-        "cloudwatch:*",
-        "iam:CreateServiceLinkedRole",
-        "iam:GetRole",
-        "iam:PassRole",
-        "ssm:*",
-        "iam:CreateRole",
-        "iam:PutRolePolicy"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:CreateServiceLinkedRole",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:AWSServiceName": [
-            "elasticloadbalancing.amazonaws.com",
-            "autoscaling.amazonaws.com"
-          ]
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": "s3:ListBucket",
-      "Resource": "arn:aws:s3:::terraform-state-ravenpack"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject"
-      ],
-      "Resource": "arn:aws:s3:::terraform-state-ravenpack/envs/*/terraform.tfstate"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:DescribeTable",
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:DeleteItem"
-      ],
-      "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
-     }
-   ]
-}
-JSON
-
 aws iam put-role-policy \
   --role-name nat-alternative-terraform \
   --policy-name TerraformNATPolicy \
-  --policy-document file://permissions-policy.json
+  --policy-document file://infra/policies/nat-alternative-terraform-policy.json
 
 # Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```
@@ -272,7 +112,7 @@ aws kms put-key-policy \
   --profile default \
   --key-id <kms-key-id-or-alias> \
   --policy-name default \
-  --policy file://kms-flowlogs-policy.json
+  --policy file://infra/policies/kms-flowlogs-policy.json
 ```
 
-Ensure `kms-flowlogs-policy.json` matches the pattern Terraform uses (see `data.aws_iam_policy_document.logs_kms` for the expected ARN).
+Ensure `infra/policies/kms-flowlogs-policy.json` matches the pattern Terraform uses (see `data.aws_iam_policy_document.logs_kms` for the expected ARN).

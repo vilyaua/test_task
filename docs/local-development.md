@@ -53,7 +53,7 @@ terraform plan -var-file=environments/test/vars.tfvars
 Review the plan output and ensure only intended changes are present.
 
 ## 4. Assume the Terraform role locally
-- For day-to-day work, create an AWS CLI profile that assumes `nat-alternative-terraform` from either your admin user or the `terraform` IAM user. Example `~/.aws/config` snippet:
+- For day-to-day work, create an AWS CLI profile that assumes `nat-alternative-terraform` from either your admin user or the `terraform` IAM user. Add the following to `~/.aws/config`:
   ```ini
   [profile terraform-role]
   role_arn = arn:aws:iam::165820787764:role/nat-alternative-terraform
