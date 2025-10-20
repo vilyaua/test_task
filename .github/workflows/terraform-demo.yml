@@ -15,6 +15,7 @@ on:
 jobs:
   demo:
     runs-on: ubuntu-latest
+    environment: demo
     permissions:
       id-token: write
       contents: read
@@ -24,8 +25,7 @@ jobs:
       TERRAFORM_ENV: ${{ github.event.inputs.environment }}
       AUTO_DESTROY: ${{ github.event.inputs.auto_destroy }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
