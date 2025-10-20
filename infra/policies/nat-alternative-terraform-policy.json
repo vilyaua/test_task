@@ -55,6 +55,11 @@
         "dynamodb:DeleteItem"
       ],
       "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::165820787764:role/github-actions-terraform"
     }
   ]
 }
