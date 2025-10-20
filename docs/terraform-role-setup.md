@@ -75,14 +75,14 @@ cat > trust-policy.json <<'JSON'
   "Statement": [
     {
       "Effect": "Allow",
-      "Principal": {
-        "AWS": [
-          "arn:aws:iam::165820787764:user/terraform",
-          "arn:aws:iam::165820787764:role/github-actions-terraform"
-        ]
-      },
+      "Principal": { "AWS": "arn:aws:iam::165820787764:user/terraform" },
       "Action": "sts:AssumeRole",
       "Condition": { "StringEquals": { "sts:ExternalId": "terraform-nat-build" } }
+    },
+    {
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::165820787764:role/github-actions-terraform" },
+      "Action": "sts:AssumeRole"
     }
   ]
 }
