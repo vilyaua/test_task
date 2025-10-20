@@ -25,5 +25,20 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-19 20:48  | Added workflow documentation snippets       | Updated `docs/github-actions-pipeline.md` with YAML and script snippets for quick reference. | ~3 min     |
 | 2025-10-19 20:56  | Documented AWS integration snippets         | Extended `docs/github-actions-pipeline.md` with trust policy, permissions, and secrets commands. | ~4 min     |
 | 2025-10-19 20:58  | Added AWS CLI setup commands                | Documented role creation and policy attachment bash steps in `docs/github-actions-pipeline.md`. | ~2 min     |
+| 2025-10-19 21:21  | Fixed workflow cache path                   | Updated Terraform workflows to use workspace cache instead of runner.temp to satisfy GitHub Actions parser. | ~2 min     |
+| 2025-10-19 21:24  | Pinned tfsec action version                 | Updated `terraform-validate` workflow to use `aquasecurity/tfsec-action@v1.0.0`. | ~1 min     |
+| 2025-10-19 21:27  | Ensured TF cache dirs exist in workflows    | Added `mkdir -p` and runner temp caching in Terraform workflows to avoid init failures. | ~2 min     |
+| 2025-10-19 21:35  | Normalized Terraform var-file formatting    | Ran `terraform fmt` on `infra/environments/test/vars.tfvars` so CI fmt check passes. | ~1 min     |
+| 2025-10-19 21:38  | Documented local validation steps           | Added `docs/local-development.md` describing fmt/lint/validate commands for contributors. | ~3 min     |
+| 2025-10-19 21:50  | Added tfsec suppressions for NAT SG         | Annotated NAT security group egress with inline tfsec ignores and rationale. | ~2 min     |
+| 2025-10-19 21:53  | Enabled VPC flow logs & updated probes      | Added CloudWatch flow logs resources, probe SG description, and doc note on tfsec. | ~5 min     |
+| 2025-10-19 22:05  | Hardened flow log IAM policy and KMS key    | Scoped IAM resources, added KMS key policy, and ensured tfsec passes. | ~6 min     |
+| 2025-10-19 22:38  | Reused existing KMS alias in Terraform      | Documented alias usage and wired `logs_kms_key_arn` variable for env-specific configuration. | ~2 min     |
+| 2025-10-19 22:41  | Added OIDC permissions to workflows         | Granted `id-token` permissions for GitHub Actions AWS authentication. | ~1 min     |
+| 2025-10-19 22:48  | Documented GitHub OIDC provider setup       | Added `aws iam create-open-id-connect-provider` to pipeline guide. | ~1 min     |
+| 2025-10-19 23:14  | Added role update command to GH guide        | Included `update-assume-role-policy` example for existing Terraform role. | ~1 min     |
+| 2025-10-19 23:23  | Expanded OIDC trust scope in docs            | Updated snippets to allow branches, tags, and PR tokens. | ~1 min     |
+| 2025-10-19 23:29  | Added sts:AssumeRole permission to GH docs   | Ensured GitHub role can assume `nat-alternative-terraform`. | ~1 min     |
+| 2025-10-19 23:38  | Added policy update note to GH docs         | Documented reusing `put-role-policy` for existing inline policy. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

@@ -75,3 +75,21 @@ variable "probe_instance_type" {
   type        = string
   default     = "t3.nano"
 }
+
+variable "flow_log_retention_days" {
+  description = "Retention period for VPC flow logs in CloudWatch Logs."
+  type        = number
+  default     = 30
+}
+
+variable "logs_kms_key_arn" {
+  description = "Optional existing KMS key ARN for encrypting VPC flow logs. Leave empty to create a dedicated key."
+  type        = string
+  default     = ""
+}
+
+variable "logs_kms_key_alias" {
+  description = "Optional existing KMS CMK alias (e.g., alias/nat-kms). Used when ARN is not provided."
+  type        = string
+  default     = ""
+}

@@ -17,9 +17,10 @@ on:
 jobs:
   destroy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
-      TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-      TF_VAR_aws_profile: ""
       TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
       TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
     steps:
@@ -39,8 +40,14 @@ jobs:
 
       - name: Terraform Init
         working-directory: infra
-        run: terraform init -input=false
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          terraform init -input=false
 
       - name: Terraform Destroy
         working-directory: infra
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
         run: terraform destroy -input=false -auto-approve -var-file=${{ env.TARGET_VAR_FILE }}

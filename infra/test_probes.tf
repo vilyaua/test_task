@@ -51,7 +51,9 @@ resource "aws_security_group" "probe" {
   description = "Allows outbound traffic for NAT connectivity probe instances"
   vpc_id      = aws_vpc.this.id
 
+  # tfsec:ignore:aws-ec2-no-public-egress-sgr Probe instances require full egress to validate NAT connectivity.
   egress {
+    description = "Probe outbound to internet"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

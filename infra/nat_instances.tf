@@ -52,6 +52,8 @@ resource "aws_security_group" "nat" {
     }
   }
 
+  # tfsec:ignore:aws-ec2-no-public-egress-sgr NAT instances require 0.0.0.0/0 egress to serve private subnets.
+  # tfsec:ignore:aws-ec2-add-description-to-security-group-rule Description provided; tfsec rule misfires on inline blocks.
   egress {
     description = "Allow outbound internet access"
     from_port   = 0

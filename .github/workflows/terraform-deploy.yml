@@ -25,10 +25,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     environment:
       name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
     env:
-      TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
       TF_VAR_aws_profile: ""
       TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
       TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
@@ -51,11 +53,17 @@ jobs:
 
       - name: Terraform Init
         working-directory: infra
-        run: terraform init -input=false
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          terraform init -input=false
 
       - name: Terraform Plan
         id: plan
         working-directory: infra
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
         run: terraform plan -input=false -var-file=${{ env.TARGET_VAR_FILE }} -out=tfplan
 
       - name: Terraform Apply
@@ -79,4 +87,6 @@ jobs:
       - name: Terraform Destroy (optional)
         if: env.AUTO_DESTROY == 'true'
         working-directory: infra
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
         run: terraform destroy -input=false -auto-approve -var-file=${{ env.TARGET_VAR_FILE }}

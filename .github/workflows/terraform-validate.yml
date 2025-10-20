@@ -15,8 +15,9 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    env:
-      TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,7 +45,7 @@ jobs:
         run: tflint
 
       - name: tfsec
-        uses: aquasecurity/tfsec-action@v1
+        uses: aquasecurity/tfsec-action@v1.0.0
         with:
           working_directory: infra
 
@@ -56,7 +57,11 @@ jobs:
 
       - name: Terraform Init
         working-directory: infra
-        run: terraform init -input=false
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          terraform init -input=false
 
       - name: Terraform Validate
         working-directory: infra
@@ -65,6 +70,7 @@ jobs:
       - name: Terraform Plan
         working-directory: infra
         env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
           TF_VAR_aws_profile: ""
         run: terraform plan -var-file=environments/test/vars.tfvars -out=tfplan
 

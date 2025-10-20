@@ -9,8 +9,6 @@ terraform {
   }
 }
 
-data "aws_region" "current" {}
-
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -20,9 +18,7 @@ data "aws_ssm_parameter" "al2023_ami" {
 }
 
 locals {
-  environment = var.environment
-  project     = var.project
-  prefix      = "${var.project}-${var.environment}"
+  prefix = "${var.project}-${var.environment}"
 
   azs = length(var.azs) > 0 ? var.azs : slice(data.aws_availability_zones.available.names, 0, var.az_count)
 

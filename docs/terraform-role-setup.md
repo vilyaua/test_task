@@ -1,7 +1,7 @@
-# S3 and DynamoDB for Terraform state file
+# S3, DynamoDB, and KMS prerequisites
 
 ```bash
-ws s3api create-bucket \
+aws s3api create-bucket \
   --bucket terraform-state-ravenpack \
   --region eu-central-1 \
   --create-bucket-configuration LocationConstraint=eu-central-1
@@ -11,7 +11,55 @@ aws dynamodb create-table \
   --attribute-definitions AttributeName=LockID,AttributeType=S \
   --key-schema AttributeName=LockID,KeyType=HASH \
   --billing-mode PAY_PER_REQUEST
+
+# Dedicated KMS key for VPC flow logs (reused by all environments)
+cat > kms-flowlogs-policy.json <<'JSON'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EnableRootAccountAccess",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::165820787764:root" },
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowCloudWatchLogsEncryption",
+      "Effect": "Allow",
+      "Principal": { "Service": "logs.eu-central-1.amazonaws.com" },
+      "Action": [
+        "kms:Encrypt*",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/vpc/nat-alternative-*"
+        }
+      }
+    }
+  ]
+}
+JSON
+
+aws kms create-key \
+  --profile default \
+  --region eu-central-1 \
+  --description "KMS key for RavenPack NAT flow logs" \
+  --key-usage ENCRYPT_DECRYPT \
+  --policy file://kms-flowlogs-policy.json
+
+aws kms enable-key-rotation \
+  --region eu-central-1 \
+  --profile default \
+  --key-id <kms-key-id-from-previous-command>
 ```
+
+Record the returned KMS key ARN and pass it to Terraform with `-var "logs_kms_key_arn=<arn>"` (or set it in the appropriate tfvars file). This single key can be shared across all environments within the account; no need to create one per environment.
 
 # Terraform Deployment Role Setup
 
@@ -27,7 +75,12 @@ cat > trust-policy.json <<'JSON'
   "Statement": [
     {
       "Effect": "Allow",
-      "Principal": { "AWS": "arn:aws:iam::165820787764:user/terraform" },
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::165820787764:user/terraform",
+          "arn:aws:iam::165820787764:role/github-actions-terraform"
+        ]
+      },
       "Action": "sts:AssumeRole",
       "Condition": { "StringEquals": { "sts:ExternalId": "terraform-nat-build" } }
     }
@@ -44,6 +97,11 @@ aws iam create-role \
   --assume-role-policy-document file://trust-policy.json \
   --description "Terraform role for NAT alternative deployment" \
   --max-session-duration 10800
+
+# Update trust policy if the role already exists
+aws iam update-assume-role-policy \
+  --role-name nat-alternative-terraform \
+  --policy-document file://trust-policy.json
 ```
 
 ## 2. Attach Deployment Permissions
