@@ -25,22 +25,22 @@ cat > kms-flowlogs-policy.json <<'JSON'
       "Resource": "*"
     },
     {
-      "Sid": "AllowCloudWatchLogsEncryption",
-      "Effect": "Allow",
-      "Principal": { "Service": "logs.eu-central-1.amazonaws.com" },
-      "Action": [
-        "kms:Encrypt*",
-        "kms:Decrypt",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey"
-      ],
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/vpc/nat-alternative-*"
-        }
-      }
+       "Sid": "AllowCloudWatchLogsEncryption",
+       "Effect": "Allow",
+       "Principal": { "Service": "logs.eu-central-1.amazonaws.com" },
+       "Action": [
+         "kms:Encrypt*",
+         "kms:Decrypt",
+         "kms:ReEncrypt*",
+         "kms:GenerateDataKey*",
+         "kms:DescribeKey"
+       ],
+       "Resource": "*",
+       "Condition": {
+         "StringLike": {
+           "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/vpc/nat-alternative-*"
+         }
+       }
     }
   ]
 }
@@ -184,3 +184,17 @@ aws sts assume-role --profile terraform \
 ```
 
 Review CloudTrail for failed actions and tighten the permissions policy as soon as module-specific ARNs are known.
+
+## 5. Update KMS Policy for Flow Logs
+When the KMS key policy changes (e.g., to include new log-group patterns), refresh it so CloudWatch Logs can continue encrypting flow logs.
+
+```bash
+aws kms put-key-policy \
+  --region eu-central-1 \
+  --profile default \
+  --key-id <kms-key-id-or-alias> \
+  --policy-name default \
+  --policy file://kms-flowlogs-policy.json
+```
+
+Ensure `kms-flowlogs-policy.json` matches the pattern Terraform uses (see `data.aws_iam_policy_document.logs_kms` for the expected ARN).
