@@ -79,9 +79,13 @@ aws iam put-role-policy \
 # setup diverges from the defaults above.
 #
 # `iam:TagRole` is included so Terraform can apply the tags defined in
-# `aws_iam_role.flow_logs`. `iam:ListRolePolicies` is required because the AWS
-# provider checks for existing inline policies before updates. Reapply the inline
-# policy whenever you tighten role permissions to keep this capability.
+# `aws_iam_role.flow_logs`. `iam:ListRolePolicies`, `iam:ListAttachedRolePolicies`,
+# and `iam:ListInstanceProfilesForRole` are required because the AWS provider
+# inspects existing inline policies, attached policies, and instance profiles
+# before updating a role. Terraform also deletes and detaches those policies on
+# destroy, so `iam:DeleteRole`, `iam:DeleteRolePolicy`, `iam:DetachRolePolicy`,
+# and `iam:GetRolePolicy` must be present. Reapply the inline policy whenever you
+# tighten role permissions to keep this capability.
 
 # Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```

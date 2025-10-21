@@ -15,6 +15,12 @@
         "iam:PassRole",
         "ssm:*",
         "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListInstanceProfilesForRole",
         "iam:ListRolePolicies",
         "iam:PutRolePolicy",
         "iam:TagRole"
