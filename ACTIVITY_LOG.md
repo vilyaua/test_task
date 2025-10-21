@@ -52,5 +52,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 18:27  | Clarified AWS profile setup                  | Updated local docs to use IAM user `terraform` as source profile. | ~2 min     |
 | 2025-10-20 18:35  | Removed provider assume-role dependency      | Provider now uses supplied profile creds; updated docs accordingly. | ~2 min     |
 | 2025-10-20 18:50  | Added backend config files                   | Created `infra/backend-test.hcl`/`backend-prod.hcl` and documented usage. | ~2 min     |
+| 2025-10-20 19:05  | Added manual gates to demo workflow          | Updated `.github/workflows/terraform-validate.yml` to require approvals before demo apply/destroy stages. | ~3 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

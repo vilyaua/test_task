@@ -117,7 +117,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Await manual approval
+      - name: Await approval to start demo
         uses: uber/workflow-dispatch-wait-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -163,6 +163,14 @@ jobs:
             --comment "Collect probe user-data logs" \
             --output text
         continue-on-error: true
+      - name: Await approval to destroy demo resources
+        if: env.AUTO_DESTROY == 'true'
+        uses: uber/workflow-dispatch-wait-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          run_id: ${{ github.run_id }}
 
       - name: Destroy (optional)
         if: env.AUTO_DESTROY == 'true'
