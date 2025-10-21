@@ -28,10 +28,6 @@ on:
         description: 'Destroy after demo (true/false)'
         required: false
         default: 'true'
-      demo_approvers:
-        description: 'Comma-separated GitHub usernames allowed to approve demo actions'
-        required: false
-        default: ''
 
 jobs:
   validate:
@@ -105,32 +101,23 @@ jobs:
           path: |
             infra/tfplan
             infra/tfplan.txt
-  demo:
+  demo_apply:
+    name: Demo (apply)
     needs: validate
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true'
     runs-on: ubuntu-latest
+    environment:
+      name: demo-${{ github.event.inputs.environment }}
     permissions:
       id-token: write
       contents: read
-      issues: write
     env:
       TF_IN_AUTOMATION: true
       TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-cache
       TERRAFORM_ENV: ${{ github.event.inputs.environment }}
-      AUTO_DESTROY: ${{ github.event.inputs.auto_destroy }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Await approval to start demo
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: ${{ github.event.inputs.demo_approvers || github.actor }}
-          issue-title: "Approve demo deployment for ${{ env.TERRAFORM_ENV }}"
-          issue-body: |
-            Terraform demo deployment for `${{ env.TERRAFORM_ENV }}` is ready.
-            Comment `APPROVE` to proceed with Terraform apply or `DENY` to stop the workflow.
-          secret: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -170,18 +157,42 @@ jobs:
             --comment "Collect probe user-data logs" \
             --output text
         continue-on-error: true
-      - name: Await approval to destroy demo resources
-        if: env.AUTO_DESTROY == 'true'
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: ${{ github.event.inputs.demo_approvers || github.actor }}
-          issue-title: "Approve demo teardown for ${{ env.TERRAFORM_ENV }}"
-          issue-body: |
-            Terraform demo teardown for `${{ env.TERRAFORM_ENV }}` is waiting.
-            Comment `APPROVE` to destroy resources or `DENY` to leave them running.
-          secret: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Destroy (optional)
-        if: env.AUTO_DESTROY == 'true'
+  demo_destroy:
+    name: Demo (destroy)
+    needs: demo_apply
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true' && github.event.inputs.auto_destroy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: teardown-${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_IN_AUTOMATION: true
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-cache
+      TERRAFORM_ENV: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: infra
+        run: |
+          mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+          terraform init -input=false -backend-config=backend-${{ env.TERRAFORM_ENV }}.hcl
+
+      - name: Destroy demo resources
         working-directory: infra
         run: terraform destroy -auto-approve -var-file=environments/${{ env.TERRAFORM_ENV }}/vars.tfvars

@@ -77,6 +77,10 @@ aws iam put-role-policy \
 # wildcard region so Terraform can acquire locks even if the backend config or
 # runner environment shifts regions. Update the account ID or table name if your
 # setup diverges from the defaults above.
+#
+# `iam:TagRole` is included so Terraform can apply the tags defined in
+# `aws_iam_role.flow_logs`. Reapply the inline policy whenever you tighten role
+# permissions to keep this capability.
 
 # Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```

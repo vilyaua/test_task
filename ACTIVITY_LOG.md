@@ -57,6 +57,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 19:24  | Swapped approval action implementation       | Replaced unavailable `uber/workflow-dispatch-wait-action` with `trstringer/manual-approval` and exposed `demo_approvers` input. | ~3 min     |
 | 2025-10-20 19:32  | Aligned approval action inputs               | Updated manual approval steps to use supported parameters and instructions via `issue-body`. | ~2 min     |
 | 2025-10-20 19:38  | Granted issue access for approvals           | Added `issues: write` permission to demo job so manual approval action can open tracking issues. | ~1 min     |
-| 2025-10-20 19:46  | Relaxed DynamoDB scope for state locking     | Wildcarded DynamoDB ARN in Terraform policy and documented the change to prevent lock permission failures. | ~2 min     |
+| 2025-10-20 19:46  | Relaxed DynamoDB scope for state locking     | Wildcarded DynamoDB ARN, added `iam:TagRole`, and documented the updates so Terraform can manage locks and role tags. | ~3 min     |
+| 2025-10-20 19:52  | Switched demo approvals to environments      | Replaced issue-based approvals with environment-gated apply/destroy jobs in `terraform-validate` workflow. | ~4 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

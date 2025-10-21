@@ -15,7 +15,8 @@
         "iam:PassRole",
         "ssm:*",
         "iam:CreateRole",
-        "iam:PutRolePolicy"
+        "iam:PutRolePolicy",
+        "iam:TagRole"
       ],
       "Resource": "*"
     },
