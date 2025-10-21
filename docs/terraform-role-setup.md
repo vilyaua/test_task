@@ -79,8 +79,9 @@ aws iam put-role-policy \
 # setup diverges from the defaults above.
 #
 # `iam:TagRole` is included so Terraform can apply the tags defined in
-# `aws_iam_role.flow_logs`. Reapply the inline policy whenever you tighten role
-# permissions to keep this capability.
+# `aws_iam_role.flow_logs`. `iam:ListRolePolicies` is required because the AWS
+# provider checks for existing inline policies before updates. Reapply the inline
+# policy whenever you tighten role permissions to keep this capability.
 
 # Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```
