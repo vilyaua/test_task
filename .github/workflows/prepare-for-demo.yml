@@ -101,8 +101,9 @@ jobs:
           path: |
             infra/tfplan
             infra/tfplan.txt
+  
   demo_apply:
-    name: Demo (apply)
+    name: Create Demo Infra & Do Testing
     needs: validate
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true'
     runs-on: ubuntu-latest
@@ -159,7 +160,7 @@ jobs:
         continue-on-error: true
 
   demo_destroy:
-    name: Demo (destroy)
+    name: CleanUp Demo Infra
     needs: demo_apply
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true' && github.event.inputs.auto_destroy == 'true'
     runs-on: ubuntu-latest
