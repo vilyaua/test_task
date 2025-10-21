@@ -55,5 +55,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 19:05  | Added manual gates to demo workflow          | Updated `.github/workflows/terraform-validate.yml` to require approvals before demo apply/destroy stages. | ~3 min     |
 | 2025-10-20 19:12  | Enabled demo job by default                  | Set `run_demo` input default to `true` so manual dispatch runs the demo unless explicitly disabled. | ~1 min     |
 | 2025-10-20 19:24  | Swapped approval action implementation       | Replaced unavailable `uber/workflow-dispatch-wait-action` with `trstringer/manual-approval` and exposed `demo_approvers` input. | ~3 min     |
+| 2025-10-20 19:32  | Aligned approval action inputs               | Updated manual approval steps to use supported parameters and instructions via `issue-body`. | ~2 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

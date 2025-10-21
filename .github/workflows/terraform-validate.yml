@@ -124,11 +124,12 @@ jobs:
       - name: Await approval to start demo
         uses: trstringer/manual-approval@v1
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
           approvers: ${{ github.event.inputs.demo_approvers || github.actor }}
-          timeout-minutes: 90
           issue-title: "Approve demo deployment for ${{ env.TERRAFORM_ENV }}"
-          instructions: "Comment APPROVE to proceed with Terraform apply or DENY to stop."
+          issue-body: |
+            Terraform demo deployment for `${{ env.TERRAFORM_ENV }}` is ready.
+            Comment `APPROVE` to proceed with Terraform apply or `DENY` to stop the workflow.
+          secret: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -172,11 +173,12 @@ jobs:
         if: env.AUTO_DESTROY == 'true'
         uses: trstringer/manual-approval@v1
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
           approvers: ${{ github.event.inputs.demo_approvers || github.actor }}
-          timeout-minutes: 90
           issue-title: "Approve demo teardown for ${{ env.TERRAFORM_ENV }}"
-          instructions: "Comment APPROVE to destroy resources or DENY to leave them running."
+          issue-body: |
+            Terraform demo teardown for `${{ env.TERRAFORM_ENV }}` is waiting.
+            Comment `APPROVE` to destroy resources or `DENY` to leave them running.
+          secret: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Destroy (optional)
         if: env.AUTO_DESTROY == 'true'
