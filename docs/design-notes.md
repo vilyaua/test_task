@@ -19,9 +19,9 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
 
   ### CI / Demo
 
-  - Terraform Validate workflow runs on every PR/push, enforcing fmt/tflint/tfsec/init/plan. Use its plan artifact during review.
-  - Terraform Demo workflow is manual (workflow_dispatch). After validation merges (or even before, via a feature branch), you can press the button to run init → plan →
-    apply → verify → optional destroy. Configure GitHub environment approvals to gate that job.
+  - The `Prepare for Demo` workflow runs on every PR/push, enforcing fmt/tflint/tfsec/init/plan and uploading the plan artifact for review.
+  - When triggered manually (`workflow_dispatch`), that same workflow exposes `Demo (apply)`/`Demo (destroy)` jobs. Approve the `demo-*`/`teardown-*`
+    environments to run init → plan → apply → verify → optional destroy.
 
   ———
 
@@ -54,8 +54,3 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
   - Use the verify_nat.sh script (and soon the Lambdas) to capture proof the deployment works during demos.
 
   Following this flow, every change is reviewed, validated by CI, demoed when needed, and merged into a single source of truth before production apply.
-
- 
-› Implement {feature}
- 
-  0% context left · ? for shortcuts

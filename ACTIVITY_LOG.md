@@ -64,5 +64,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 20:08  | Allowed Terraform to clean up IAM roles      | Granted delete/detach role permissions to unblock flow log role destruction and documented the change. | ~2 min     |
 | 2025-10-20 20:12  | Enabled inline role policy reads             | Added `iam:GetRolePolicy` permission and updated docs so Terraform can confirm flow log policies during apply. | ~1 min     |
 | 2025-10-20 20:18  | Renamed and pruned GitHub workflows          | Renamed validation workflow to `Prepare for Demo`, removed unused GitHub Action files, and refreshed pipeline docs. | ~4 min     |
+| 2025-10-20 20:22  | Aligned documentation with new workflow      | Updated README and design notes to reference only the `Prepare for Demo` pipeline. | ~2 min     |
+| 2025-10-20 20:26  | Updated README automation roadmap            | Replaced legacy workflow examples, outlined the new CI/CD flow, and detailed planned Lambda automations. | ~3 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

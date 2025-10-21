@@ -120,7 +120,8 @@ CW -.-> EC2B
 │       ├── kms-flowlogs-policy.json
 │       ├── github-actions-trust.json
 │       └── github-actions-policy.json
-└── .github/workflows/                # currently disabled while iterating locally
+└── .github/workflows/
+    └── prepare-for-demo.yml         # validation + optional demo pipeline
 ```
 ## 🚀 Quick Start (manual execution)
 > Shortcut: `./infra/scripts/bootstrap.sh --profile terraform-role --env test` will reapply policies (unless `--skip-iam`) and run Terraform plan/apply with the correct backend/var files.
@@ -162,9 +163,9 @@ Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
 ## 🎬 Demo & Automation Roadmap
 
 - **Terraform-first demo** – use Terraform to deploy the full stack in a sandbox account, then run `verify_nat.sh` to confirm NAT health and routing.
-- **GitHub Actions demo button** – trigger the `Terraform Demo` workflow, choose the target environment, and approve the run in the `demo` environment to deploy, verify, and optionally destroy the stack automatically.
+- **GitHub Actions demo button** – trigger the `Prepare for Demo` workflow, choose the target environment, and approve the `demo-*`/`teardown-*` environments to deploy, verify, and optionally destroy the stack automatically.
 - **Traffic probes** – extend probe user-data or SSM automation to generate curl/iperf traffic, publish latency/packet-loss metrics, and store traces for demo dashboards.
-- **Lambdas & maintenance** – implement the Lambda functions described in `docs/design-notes.md` (`nat-health-probe`, `nat-route-failover`, `config-guard`, etc.) to automate failover, configuration drift checks, and probe orchestration.
+- **Lambdas & maintenance** – implement automation functions (see *Planned Lambda Automations* below) to keep routing healthy, detect drift, and orchestrate probes.
 - **Suggested demo flow**
   1. `terraform apply` in a clean account.
   2. Run `verify_nat.sh`, show CloudWatch metrics/flow logs.
@@ -215,107 +216,20 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 
 ---
 
-## ⚙️ Example GitHub Actions Pipelines
+## ⚙️ CI/CD Workflow
 
-<details>
-<summary><b>✅ CI — Lint & Validate Terraform (test.yml)</b></summary>
+- **Prepare for Demo (`.github/workflows/prepare-for-demo.yml`)**
+  - Runs fmt, tflint, tfsec, and `terraform plan` on every push/PR that touches infra or docs.
+  - When launched manually, pauses for `demo-*` and `teardown-*` environment approvals before applying or destroying demo stacks.
+  - Captures plan artifacts and runs `infra/scripts/verify_nat.sh` plus probe log collection so reviewers have evidence of the deployment.
+- See `docs/github-actions-pipeline.md` for the full YAML snippet and environment setup guidance.
 
-```yaml
-name: CI Validate Infra
+## 🧪 Planned Lambda Automations
 
-on:
-  push:
-    branches: [ main, dev ]
-  pull_request:
-
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        run: terraform init infra/
-
-      - name: Terraform Validate
-        run: terraform validate infra/
-```
-
-</details>
-
-<details>
-<summary><b>🚀 Deploy to Test Environment (deploy-test.yml)</b></summary>
-
-```yaml
-name: Deploy Test
-
-on:
-  push:
-    branches: [ dev ]
-
-jobs:
-  deploy-test:
-    runs-on: ubuntu-latest
-    environment: test
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        run: terraform init -backend-config=environments/test/backend.tfvars
-
-      - name: Terraform Plan
-        run: terraform plan -var-file=environments/test/vars.tfvars
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file=environments/test/vars.tfvars
-```
-
-</details>
-
-<details>
-<summary><b>🏁 Deploy to Production with Approval (deploy-prod.yml)</b></summary>
-
-```yaml
-name: Deploy Production
-
-on:
-  workflow_dispatch:
-
-jobs:
-  deploy-prod:
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://aws.amazon.com
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        run: terraform init -backend-config=environments/prod/backend.tfvars
-
-      - name: Terraform Plan
-        run: terraform plan -var-file=environments/prod/vars.tfvars
-
-      - name: Manual Approval
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: vitalii-perminov
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file=environments/prod/vars.tfvars
-```
-
-</details>
-
----
+- `nat-health-probe` — executes scheduled connectivity checks from probe instances and publishes CloudWatch metrics/alarms when outbound traffic fails.
+- `nat-route-failover` — reacts to health alarms by shifting private subnet routes to the healthy NAT instance and re-associating elastic IPs if needed.
+- `config-guard` — watches for configuration drift (routes, security groups, ASG settings) and either auto-remediates or raises incidents.
+- `probe-controller` — coordinates lifecycle of lightweight probe instances/SSM automations used by the demo workflow and upcoming synthetic tests.
 
 ## 🧠 Implementation Timeline
 
@@ -323,7 +237,7 @@ jobs:
 | --- | ---------------------------- | --------------------------------------- |
 | 1–2 | Architecture & Documentation | Diagram, component design, trade-offs   |
 | 3–4 | IaC Implementation           | Terraform/Pulumi stack with scripts     |
-| 5   | CI/CD Setup                  | GitHub Actions workflows                |
+| 5   | CI/CD Setup                  | Prepare for Demo GitHub Actions workflow |
 | 6   | Testing & Review             | Validation, cost analysis, final README |
 
 ---
