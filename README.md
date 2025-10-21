@@ -162,6 +162,7 @@ Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
 ## 🎬 Demo & Automation Roadmap
 
 - **Terraform-first demo** – use Terraform to deploy the full stack in a sandbox account, then run `verify_nat.sh` to confirm NAT health and routing.
+- **GitHub Actions demo button** – trigger the `Terraform Demo` workflow, choose the target environment, and approve the run in the `demo` environment to deploy, verify, and optionally destroy the stack automatically.
 - **Traffic probes** – extend probe user-data or SSM automation to generate curl/iperf traffic, publish latency/packet-loss metrics, and store traces for demo dashboards.
 - **Lambdas & maintenance** – implement the Lambda functions described in `docs/design-notes.md` (`nat-health-probe`, `nat-route-failover`, `config-guard`, etc.) to automate failover, configuration drift checks, and probe orchestration.
 - **Suggested demo flow**

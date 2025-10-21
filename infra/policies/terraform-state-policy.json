@@ -4,7 +4,10 @@
     {
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+        "AWS": [
+          "arn:aws:iam::165820787764:role/nat-alternative-terraform",
+          "arn:aws:iam::165820787764:role/github-actions-terraform"
+        ]
       },
       "Action": "s3:ListBucket",
       "Resource": "arn:aws:s3:::terraform-state-ravenpack"
@@ -12,7 +15,10 @@
     {
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+        "AWS": [
+          "arn:aws:iam::165820787764:role/nat-alternative-terraform",
+          "arn:aws:iam::165820787764:role/github-actions-terraform"
+        ]
       },
       "Action": [
         "s3:GetObject",

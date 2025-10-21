@@ -15,7 +15,15 @@
         "iam:PassRole",
         "ssm:*",
         "iam:CreateRole",
-        "iam:PutRolePolicy"
+        "iam:DeleteRole",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListInstanceProfilesForRole",
+        "iam:ListRolePolicies",
+        "iam:PutRolePolicy",
+        "iam:TagRole"
       ],
       "Resource": "*"
     },
@@ -54,7 +62,12 @@
         "dynamodb:PutItem",
         "dynamodb:DeleteItem"
       ],
-      "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
+      "Resource": "arn:aws:dynamodb:*:165820787764:table/terraform-locks"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::165820787764:role/github-actions-terraform"
     }
   ]
 }

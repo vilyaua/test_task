@@ -73,6 +73,20 @@ aws iam put-role-policy \
   --policy-name TerraformNATPolicy \
   --policy-document file://infra/policies/nat-alternative-terraform-policy.json
 
+# The DynamoDB resource scope in `nat-alternative-terraform-policy.json` uses a
+# wildcard region so Terraform can acquire locks even if the backend config or
+# runner environment shifts regions. Update the account ID or table name if your
+# setup diverges from the defaults above.
+#
+# `iam:TagRole` is included so Terraform can apply the tags defined in
+# `aws_iam_role.flow_logs`. `iam:ListRolePolicies`, `iam:ListAttachedRolePolicies`,
+# and `iam:ListInstanceProfilesForRole` are required because the AWS provider
+# inspects existing inline policies, attached policies, and instance profiles
+# before updating a role. Terraform also deletes and detaches those policies on
+# destroy, so `iam:DeleteRole`, `iam:DeleteRolePolicy`, `iam:DetachRolePolicy`,
+# and `iam:GetRolePolicy` must be present. Reapply the inline policy whenever you
+# tighten role permissions to keep this capability.
+
 # Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```
 

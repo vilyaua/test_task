@@ -1,10 +1,198 @@
-name: Terraform Validate (disabled)
+name: Terraform Validate
 
-on: []
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'infra/**'
+      - 'docs/**'
+      - '.github/workflows/terraform-validate.yml'
+      - 'README.md'
+  pull_request:
+    paths:
+      - 'infra/**'
+      - 'docs/**'
+      - '.github/workflows/terraform-validate.yml'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      run_demo:
+        description: 'Run demo after validation (true/false)'
+        required: false
+        default: 'true'
+      environment:
+        description: 'Environment for demo (test or prod)'
+        required: false
+        default: 'test'
+      auto_destroy:
+        description: 'Destroy after demo (true/false)'
+        required: false
+        default: 'true'
 
 jobs:
-  placeholder:
+  validate:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_IN_AUTOMATION: true
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-cache
     steps:
-      - name: Workflow disabled
-        run: echo "terraform-validate workflow temporarily disabled"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v3
+        with:
+          tflint_version: latest
+
+      - name: Initialize TFLint plugins
+        working-directory: infra
+        run: tflint --init
+
+      - name: Terraform fmt
+        working-directory: infra
+        run: terraform fmt -check -recursive
+
+      - name: TFLint
+        working-directory: infra
+        run: tflint
+
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: infra
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: infra
+        run: |
+          mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+          terraform init -input=false -backend-config=backend-test.hcl
+      - name: Terraform Validate
+        working-directory: infra
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: infra
+        env:
+          TF_VAR_aws_profile: ""
+        run: terraform plan -lock=false -var-file=environments/test/vars.tfvars -out=tfplan
+
+      - name: Terraform Show Plan
+        working-directory: infra
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: |
+            infra/tfplan
+            infra/tfplan.txt
+  demo_apply:
+    name: Demo (apply)
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: demo-${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_IN_AUTOMATION: true
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-cache
+      TERRAFORM_ENV: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: infra
+        run: |
+          mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+          terraform init -input=false -backend-config=backend-${{ env.TERRAFORM_ENV }}.hcl
+      - name: Terraform Plan
+        working-directory: infra
+        run: terraform plan -var-file=environments/${{ env.TERRAFORM_ENV }}/vars.tfvars -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: infra
+        run: terraform apply -auto-approve tfplan
+
+      - name: Run verification script
+        working-directory: infra
+        run: ./scripts/verify_nat.sh ${{ env.TERRAFORM_ENV }}
+
+      - name: Collect probe logs
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets Key=tag:Project,Values=nat-alternative Key=tag:Environment,Values=${{ env.TERRAFORM_ENV }} Key=tag:Role,Values=probe \
+            --parameters commands='sudo journalctl -u cloud-init --no-pager | tail -n 200' \
+            --region ${{ secrets.AWS_REGION }} \
+            --comment "Collect probe user-data logs" \
+            --output text
+        continue-on-error: true
+
+  demo_destroy:
+    name: Demo (destroy)
+    needs: demo_apply
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true' && github.event.inputs.auto_destroy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: teardown-${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_IN_AUTOMATION: true
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-cache
+      TERRAFORM_ENV: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: infra
+        run: |
+          mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+          terraform init -input=false -backend-config=backend-${{ env.TERRAFORM_ENV }}.hcl
+
+      - name: Destroy demo resources
+        working-directory: infra
+        run: terraform destroy -auto-approve -var-file=environments/${{ env.TERRAFORM_ENV }}/vars.tfvars
