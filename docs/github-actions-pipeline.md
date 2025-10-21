@@ -98,82 +98,71 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
   gh secret set AWS_REGION --body "us-east-1"
   ```
 
-## 2. Workflows
-1. **`terraform-validate.yml` (push to `main` + PR):**
-   - `terraform fmt -check`, `tflint`, `tfsec`.
-   - `terraform validate` with plugin caching.
-   - `terraform plan -var-file=environments/test/vars.tfvars` and upload the plan as an artifact + PR comment.
+## 2. Workflow
+- **`prepare-for-demo.yml` (push to `main`, PR, or manual dispatch):**
+  - Validates Terraform on every push/PR touching infra/docs, then exposes a manual demo path when triggered with `workflow_dispatch`.
+  - Jobs:
+    - `validate`: runs fmt, tflint, tfsec, `terraform validate`, and `terraform plan` (test var-file) with artifacts.
+    - `Demo (apply)`: gated by the `demo-<env>` environment. Once approved, plans/applies against the selected env, runs verification script, and gathers probe logs.
+    - `Demo (destroy)`: optional teardown gated by the `teardown-<env>` environment when `auto_destroy=true`.
 
-   ```yaml
-   # .github/workflows/terraform-validate.yml
-   jobs:
-     validate:
-       runs-on: ubuntu-latest
-       env:
-         TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/.terraform-cache
-       steps:
-         - uses: actions/checkout@v4
-         - uses: hashicorp/setup-terraform@v3
-           with:
-             terraform_version: 1.13.3
-         - uses: aws-actions/configure-aws-credentials@v4
-           with:
-             role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-             aws-region: ${{ secrets.AWS_REGION }}
-         - run: terraform init -input=false
-           working-directory: infra
-         - run: terraform plan -var-file=environments/test/vars.tfvars -out=tfplan
-           working-directory: infra
-   ```
+  ```yaml
+  # .github/workflows/prepare-for-demo.yml
+  jobs:
+    validate:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: 1.13.3
+        - uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+            aws-region: ${{ secrets.AWS_REGION }}
+        - run: terraform init -input=false -backend-config=backend-test.hcl
+          working-directory: infra
+        - run: terraform plan -var-file=environments/test/vars.tfvars -out=tfplan
+          working-directory: infra
+    demo_apply:
+      environment: demo-${{ github.event.inputs.environment }}
+      needs: validate
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true'
+      env:
+        TERRAFORM_ENV: ${{ github.event.inputs.environment }}
+      steps:
+        - uses: actions/checkout@v4
+        - uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: 1.13.3
+        - uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+            aws-region: ${{ secrets.AWS_REGION }}
+        - run: terraform apply -auto-approve tfplan
+          working-directory: infra
+        - run: ./scripts/verify_nat.sh ${{ env.TERRAFORM_ENV }}
+          working-directory: infra
+    demo_destroy:
+      environment: teardown-${{ github.event.inputs.environment }}
+      needs: demo_apply
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_demo == 'true' && github.event.inputs.auto_destroy == 'true'
+      env:
+        TERRAFORM_ENV: ${{ github.event.inputs.environment }}
+      steps:
+        - uses: actions/checkout@v4
+        - uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: 1.13.3
+        - uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+            aws-region: ${{ secrets.AWS_REGION }}
+        - run: terraform destroy -auto-approve -var-file=environments/${{ env.TERRAFORM_ENV }}/vars.tfvars
+          working-directory: infra
+  ```
 
-2. **`terraform-deploy.yml` (manual dispatch):**
-   - Triggered by the “Run workflow” button; defaults to the `test` environment.
-   - Runs `terraform init → plan → apply` using the remote S3 backend, then executes NAT connectivity probes (Section 3) and captures outputs.
-   - Destroys the stack automatically unless `destroy_after=false` is supplied.
-
-   ```yaml
-   # .github/workflows/terraform-deploy.yml
-   jobs:
-     deploy:
-       runs-on: ubuntu-latest
-       env:
-         TF_VAR_aws_profile: ""
-         TARGET_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'test' }}
-       steps:
-         - uses: actions/checkout@v4
-         - uses: hashicorp/setup-terraform@v3
-         - uses: aws-actions/configure-aws-credentials@v4
-           with:
-             role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-             aws-region: ${{ secrets.AWS_REGION }}
-         - run: terraform apply -input=false -auto-approve tfplan
-           working-directory: infra
-         - run: ./scripts/verify_nat.sh "${TARGET_ENV}"
-           working-directory: infra
-   ```
-
-3. **`terraform-destroy.yml` (manual dispatch):**
-   - Provides an explicit “destroy everything” button using the remote backend.
-   - Accepts environment/var-file inputs identical to the deploy workflow.
-
-   ```yaml
-   # .github/workflows/terraform-destroy.yml
-   jobs:
-     destroy:
-       runs-on: ubuntu-latest
-       env:
-         TARGET_VAR_FILE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.var_file || 'environments/test/vars.tfvars' }}
-       steps:
-         - uses: actions/checkout@v4
-         - uses: aws-actions/configure-aws-credentials@v4
-           with:
-             role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-             aws-region: ${{ secrets.AWS_REGION }}
-         - run: terraform destroy -auto-approve -var-file=${{ env.TARGET_VAR_FILE }}
-           working-directory: infra
-   ```
-
-Use workflow reuse (`workflow_call`) so `deploy` and `destroy` share init logic. Cache providers with `hashicorp/setup-terraform` and set `TF_PLUGIN_CACHE_DIR`.
+  Approvals: add yourself/teams as required reviewers under the `demo-*` and `teardown-*` environments (`Settings → Environments`). After the `validate` job succeeds, dispatchers approve the environment gates directly in the Actions UI.
 
 ## 3. Test Scenario Execution
 - Launch lightweight probe instances in private subnets (t3.nano) using Terraform; user data runs outbound checks (curl to public endpoints, DNS lookups).
