@@ -54,7 +54,7 @@
         "dynamodb:PutItem",
         "dynamodb:DeleteItem"
       ],
-      "Resource": "arn:aws:dynamodb:eu-central-1:165820787764:table/terraform-locks"
+      "Resource": "arn:aws:dynamodb:*:165820787764:table/terraform-locks"
     },
     {
       "Effect": "Allow",

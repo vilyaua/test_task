@@ -73,6 +73,11 @@ aws iam put-role-policy \
   --policy-name TerraformNATPolicy \
   --policy-document file://infra/policies/nat-alternative-terraform-policy.json
 
+# The DynamoDB resource scope in `nat-alternative-terraform-policy.json` uses a
+# wildcard region so Terraform can acquire locks even if the backend config or
+# runner environment shifts regions. Update the account ID or table name if your
+# setup diverges from the defaults above.
+
 # Adjust the S3 key prefixes above (envs/*/terraform.tfstate) if your backend uses a different path.
 ```
 
