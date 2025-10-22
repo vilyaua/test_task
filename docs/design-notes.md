@@ -34,6 +34,7 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
   - Keep environment-specific state/backends (backend-test.hcl, backend-prod.hcl). Avoid manually switching them on a feature branch—use the helper script or the
     workflows to stay consistent.
   - Production runs span three Availability Zones (`az_count = 3` in `environments/prod/vars.tfvars`). Validate any module changes against that topology before release.
+  - Test and prod now use different CIDR ranges (`10.0.0.0/16` vs `10.1.0.0/16`). Keep them unique to avoid future VPC peering or routing conflicts.
 
   ———
 
