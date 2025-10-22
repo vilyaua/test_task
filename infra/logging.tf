@@ -80,6 +80,26 @@ resource "aws_cloudwatch_log_group" "vpc_flow" {
   })
 }
 
+resource "aws_cloudwatch_log_group" "nat_instances" {
+  name              = "/nat/${local.prefix}/nat"
+  retention_in_days = var.app_log_retention_days
+
+  tags = merge(local.base_tags, {
+    Name = "${local.prefix}-nat-logs"
+    Role = "nat"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "probes" {
+  name              = "/nat/${local.prefix}/probe"
+  retention_in_days = var.app_log_retention_days
+
+  tags = merge(local.base_tags, {
+    Name = "${local.prefix}-probe-logs"
+    Role = "probe"
+  })
+}
+
 resource "aws_iam_role" "flow_logs" {
   name               = "${local.prefix}-flowlogs-role"
   assume_role_policy = data.aws_iam_policy_document.flow_logs_assume.json

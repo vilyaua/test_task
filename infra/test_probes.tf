@@ -8,8 +8,33 @@ locals {
 
     echo "$(date --iso-8601=seconds) [INFO] Starting NAT connectivity probe"
 
+    # Ensure the SSM agent is available for log collection
+    systemctl enable --now amazon-ssm-agent
+
     # Install minimal tooling for outbound checks
-    dnf install -y curl bind-utils traceroute >/dev/null
+    dnf install -y curl bind-utils traceroute amazon-cloudwatch-agent >/dev/null
+
+    CW_LOG_GROUP_PROBE="${aws_cloudwatch_log_group.probes.name}"
+    cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CONFIG
+    {
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/var/log/nat-probe.log",
+                "log_group_name": "$${CW_LOG_GROUP_PROBE}",
+                "log_stream_name": "probe-{instance_id}",
+                "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+              }
+            ]
+          }
+        }
+      }
+    }
+    CONFIG
+
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
     endpoints=(
       "https://checkip.amazonaws.com"
@@ -79,6 +104,7 @@ resource "aws_instance" "probe" {
   user_data_replace_on_change          = true
   instance_initiated_shutdown_behavior = "terminate"
   monitoring                           = false
+  iam_instance_profile                 = aws_iam_instance_profile.instance.name
 
   metadata_options {
     http_endpoint          = "enabled"

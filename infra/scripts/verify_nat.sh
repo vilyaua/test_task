@@ -104,12 +104,17 @@ done
 
 probe_json=$(terraform output -json probe_instance_ids 2>/dev/null || echo '{}')
 if [[ $(echo "${probe_json}" | jq 'length') -gt 0 ]]; then
-  log "Waiting for probe instances to terminate"
-  ids=$(echo "${probe_json}" | jq -r '.[]')
-  if [[ -n "${ids}" ]]; then
-    aws ec2 wait instance-terminated --region "${REGION}" --instance-ids ${ids} || {
+  mapfile -t probe_ids < <(echo "${probe_json}" | jq -r '.[]')
+
+  if [[ ${#probe_ids[@]} -eq 0 ]]; then
+    log "No probe instances reported by Terraform output; skipping wait"
+  else
+    log "Waiting for probe instances to terminate: ${probe_ids[*]}"
+    if aws ec2 wait instance-terminated --region "${REGION}" --instance-ids "${probe_ids[@]}"; then
+      log "Probe instances terminated"
+    else
       log "WARNING: Timeout waiting for probe instances to terminate"
-    }
+    fi
   fi
 fi
 

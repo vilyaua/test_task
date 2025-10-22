@@ -82,6 +82,12 @@ variable "flow_log_retention_days" {
   default     = 30
 }
 
+variable "app_log_retention_days" {
+  description = "Retention period for application logs (NAT instances, probes)."
+  type        = number
+  default     = 14
+}
+
 variable "logs_kms_key_arn" {
   description = "Optional existing KMS key ARN for encrypting VPC flow logs. Leave empty to create a dedicated key."
   type        = string

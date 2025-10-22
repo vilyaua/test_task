@@ -11,9 +11,31 @@ locals {
     EOT
     sysctl -p /etc/sysctl.d/98-nat.conf
 
-    # Install iptables services to persist NAT rules
-    dnf install -y iptables-nft-services
+    # Install iptables services and the CloudWatch agent
+    dnf install -y iptables-nft-services amazon-cloudwatch-agent
     systemctl enable --now iptables
+
+    CW_LOG_GROUP_NAT="${aws_cloudwatch_log_group.nat_instances.name}"
+    cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CONFIG
+    {
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/var/log/cloud-init-output.log",
+                "log_group_name": "$${CW_LOG_GROUP_NAT}",
+                "log_stream_name": "nat-{instance_id}",
+                "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+              }
+            ]
+          }
+        }
+      }
+    }
+    CONFIG
+
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
     # Flush existing NAT rules and configure masquerading
     iptables -t nat -F
@@ -21,6 +43,9 @@ locals {
 
     # Persist iptables configuration
     iptables-save >/etc/sysconfig/iptables
+
+    # Ensure the SSM agent is online for automation
+    systemctl enable --now amazon-ssm-agent
 
     # Harden SSH if it gets enabled later
     sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
@@ -78,6 +103,7 @@ resource "aws_instance" "nat" {
   source_dest_check           = false
   vpc_security_group_ids      = [aws_security_group.nat.id]
   user_data                   = local.nat_user_data
+  iam_instance_profile        = aws_iam_instance_profile.instance.name
 
   metadata_options {
     http_endpoint          = "enabled"
