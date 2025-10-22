@@ -123,6 +123,14 @@ CW -.-> EC2B
 └── .github/workflows/
     └── prepare-for-demo.yml         # validation + optional demo pipeline
 ```
+
+## 🔀 Branching & Release Flow
+
+- `development` is the day-to-day integration branch; small fixes can be pushed directly, larger efforts land via `feature/*` pull requests.
+- `main` remains the production source of truth. Protect it so only reviewed PRs from `development` can merge, and require your approval before release.
+- Feature branches are created from `development`, reviewed with focused PRs, and squashed back into `development`.
+- Promote to production by raising a PR from `development` to `main`, then running Terraform apply from `main` after approval.
+
 ## 🚀 Quick Start (manual execution)
 > Shortcut: `./infra/scripts/bootstrap.sh --profile terraform-role --env test` will reapply policies (unless `--skip-iam`) and run Terraform plan/apply with the correct backend/var files.
 
@@ -159,6 +167,7 @@ CW -.-> EC2B
    ```
 
 Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
+`environments/prod/vars.tfvars` is already configured for three Availability Zones (`az_count = 3`) to meet HA requirements.
 
 ## 🎬 Demo & Automation Roadmap
 

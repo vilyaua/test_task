@@ -5,14 +5,16 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
   ### Branch Strategy
 
   1. main = production truth.
-      - Always deploy production from main.
-      - Protect the branch (required reviews, CI pass, no direct pushes).
-  2. Short-lived feature branches.
-      - Create feature/<ticket> branches off main.
-      - Work locally, commit often, push to GitHub.
-      - Open a PR back to main.
-  3. One PR = one change.
-      - They stay focused and easy to review.
+      - No direct pushes; protect the branch so only PRs from `development` can merge.
+      - Require at least one approval from the repository owner (me) before merging.
+  2. development = integration branch.
+      - Day-to-day work lands here via direct pushes (small fixes) or PRs from feature branches.
+      - Keep it deployable so promoting to `main` is a fast forward + review cycle.
+  3. Short-lived feature branches.
+      - Create `feature/<ticket>` branches off `development`.
+      - Push regularly, open PRs targeting `development`, and squash when they merge.
+  4. One PR = one change.
+      - Keeps reviews small and makes it easy to cherry-pick into `main` when needed.
       - Rebase (or fast-forward) before merging to avoid merge commits.
 
   ———
@@ -31,6 +33,7 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
     Otherwise, trunk-based works well: each merge to main is deployable.
   - Keep environment-specific state/backends (backend-test.hcl, backend-prod.hcl). Avoid manually switching them on a feature branch—use the helper script or the
     workflows to stay consistent.
+  - Production runs span three Availability Zones (`az_count = 3` in `environments/prod/vars.tfvars`). Validate any module changes against that topology before release.
 
   ———
 
