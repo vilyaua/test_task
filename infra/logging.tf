@@ -39,8 +39,7 @@ data "aws_iam_policy_document" "logs_kms" {
       "kms:Encrypt*",
       "kms:Decrypt",
       "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey"
+      "kms:GenerateDataKey*"
     ]
 
     resources = ["*"]
@@ -55,6 +54,19 @@ data "aws_iam_policy_document" "logs_kms" {
         "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.prefix}-log-collector"
       ]
     }
+  }
+
+  statement {
+    sid    = "AllowCloudWatchLogsDescribeKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+
+    actions   = ["kms:DescribeKey"]
+    resources = ["*"]
   }
 }
 
