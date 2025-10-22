@@ -92,7 +92,7 @@ resource "aws_lambda_function" "log_collector" {
 resource "aws_cloudwatch_log_group" "log_collector_lambda" {
   name              = "/aws/lambda/${aws_lambda_function.log_collector.function_name}"
   retention_in_days = var.app_log_retention_days
-  kms_key_id        = local.flow_logs_kms_arn
+  kms_key_id        = local.app_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-log-collector-lg"

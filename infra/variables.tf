@@ -99,3 +99,15 @@ variable "logs_kms_key_alias" {
   type        = string
   default     = ""
 }
+
+variable "app_logs_kms_key_arn" {
+  description = "Optional existing KMS key ARN for application log groups. Leave empty to reuse managed defaults."
+  type        = string
+  default     = ""
+}
+
+variable "app_logs_kms_key_alias" {
+  description = "Optional existing KMS CMK alias for application log groups (e.g., alias/nat-app-logs)."
+  type        = string
+  default     = ""
+}

@@ -5,6 +5,11 @@ data "aws_kms_key" "logs_alias" {
   key_id = var.logs_kms_key_alias
 }
 
+data "aws_kms_key" "app_logs_alias" {
+  count  = var.app_logs_kms_key_arn == "" && var.app_logs_kms_key_alias != "" ? 1 : 0
+  key_id = var.app_logs_kms_key_alias
+}
+
 data "aws_iam_policy_document" "logs_kms" {
   count = var.logs_kms_key_arn == "" && var.logs_kms_key_alias == "" ? 1 : 0
 
@@ -73,6 +78,17 @@ locals {
   ])[0]
 }
 
+locals {
+  app_logs_kms_candidates = [
+    var.app_logs_kms_key_arn,
+    var.app_logs_kms_key_alias != "" ? data.aws_kms_key.app_logs_alias[0].arn : "",
+    try(aws_kms_key.logs[0].arn, ""),
+    can(regex(":alias/", local.flow_logs_kms_arn)) ? "" : local.flow_logs_kms_arn,
+    "alias/aws/logs"
+  ]
+  app_logs_kms_arn = compact(local.app_logs_kms_candidates)[0]
+}
+
 resource "aws_cloudwatch_log_group" "vpc_flow" {
   name              = "/aws/vpc/${local.prefix}"
   retention_in_days = var.flow_log_retention_days
@@ -86,7 +102,7 @@ resource "aws_cloudwatch_log_group" "vpc_flow" {
 resource "aws_cloudwatch_log_group" "nat_instances" {
   name              = "/nat/${local.prefix}/nat"
   retention_in_days = var.app_log_retention_days
-  kms_key_id        = local.flow_logs_kms_arn
+  kms_key_id        = local.app_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-nat-logs"
@@ -97,7 +113,7 @@ resource "aws_cloudwatch_log_group" "nat_instances" {
 resource "aws_cloudwatch_log_group" "probes" {
   name              = "/nat/${local.prefix}/probe"
   retention_in_days = var.app_log_retention_days
-  kms_key_id        = local.flow_logs_kms_arn
+  kms_key_id        = local.app_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-probe-logs"

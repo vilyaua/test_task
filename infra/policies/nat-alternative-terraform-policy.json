@@ -26,7 +26,12 @@
         "iam:ListInstanceProfilesForRole",
         "iam:ListRolePolicies",
         "iam:PutRolePolicy",
-        "iam:TagRole"
+        "iam:TagRole",
+        "iam:CreateInstanceProfile",
+        "iam:DeleteInstanceProfile",
+        "iam:GetInstanceProfile",
+        "iam:AddRoleToInstanceProfile",
+        "iam:RemoveRoleFromInstanceProfile"
       ],
       "Resource": "*"
     },
