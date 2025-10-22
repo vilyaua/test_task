@@ -123,6 +123,14 @@ CW -.-> EC2B
 └── .github/workflows/
     └── prepare-for-demo.yml         # validation + optional demo pipeline
 ```
+
+## 🔀 Branching & Release Flow
+
+- `development` is the day-to-day integration branch; small fixes can be pushed directly, larger efforts land via `feature/*` pull requests.
+- `main` remains the production source of truth. Protect it so only reviewed PRs from `development` can merge, and require your approval before release.
+- Feature branches are created from `development`, reviewed with focused PRs, and squashed back into `development`.
+- Promote to production by raising a PR from `development` to `main`, then running Terraform apply from `main` after approval.
+
 ## 🚀 Quick Start (manual execution)
 > Shortcut: `./infra/scripts/bootstrap.sh --profile terraform-role --env test` will reapply policies (unless `--skip-iam`) and run Terraform plan/apply with the correct backend/var files.
 
@@ -159,6 +167,8 @@ CW -.-> EC2B
    ```
 
 Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
+`environments/prod/vars.tfvars` is already configured for three Availability Zones (`az_count = 3`) to meet HA requirements.
+Each environment now uses a distinct CIDR block (`10.0.0.0/16` for test, `10.1.0.0/16` for prod); adjust these if they overlap with existing VPCs in your accounts.
 
 ## 🎬 Demo & Automation Roadmap
 
@@ -190,37 +200,37 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 
 ### Epic 1 — Architecture & Design
 
-* [ ] Analyze AWS components suitable for NAT alternative (EC2, ASG, NLB, Route Tables, IAM).
-* [ ] Create **multi-AZ design** with fault tolerance.
+* [x] Analyze AWS components suitable for NAT alternative (EC2, ASG, NLB, Route Tables, IAM).
+* [x] Create **multi-AZ design** with fault tolerance.
 * [ ] Document routing logic and failover mechanism.
 * [ ] Draw initial architecture diagram (Mermaid / Draw.io).
 
 ### Epic 2 — Infrastructure as Code (IaC)
 
-* [ ] Implement Terraform or Pulumi stack.
-* [ ] Create parameterized **test** and **prod** environments.
-* [ ] Automate EC2 image creation (Packer optional).
+* [x] Implement Terraform or Pulumi stack.
+* [x] Create parameterized **test** and **prod** environments.
+* [x] Automate EC2 image creation (Packer optional).
 * [ ] Integrate health checks and dynamic routes.
 
 ### Epic 3 — CI/CD Pipeline
 
-* [ ] Set up GitHub Actions workflow.
-* [ ] Lint and validate infrastructure definitions.
-* [ ] Deploy to **test** environment on push.
+* [x] Set up GitHub Actions workflow.
+* [x] Lint and validate infrastructure definitions.
+* [x] Deploy to **test** environment on push.
 * [ ] Manual approval step for **prod** deployment.
 
 ### Epic 4 — Monitoring & Security
 
 * [ ] Add CloudWatch metrics and alarms for instance health.
 * [ ] Enable VPC Flow Logs and log rotation.
-* [ ] Configure IAM roles and least privilege policies.
+* [x] Configure IAM roles and least privilege policies.
 * [ ] Document operational runbook (failover, maintenance).
 
 ### Epic 5 — Documentation & Review
 
-* [ ] Write component explanations and trade-offs.
+* [x] Write component explanations and trade-offs.
 * [ ] Include cost and scalability considerations.
-* [ ] Create `docs/design-notes.md` for reviewers.
+* [x] Create `docs/design-notes.md` for reviewers.
 * [ ] Record demo or screenshots (optional).
 
 ---

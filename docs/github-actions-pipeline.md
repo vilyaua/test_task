@@ -99,7 +99,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
   ```
 
 ## 2. Workflow
-- **`prepare-for-demo.yml` (push to `main`, PR, or manual dispatch):**
+- **`prepare-for-demo.yml` (push to `main`/`development`, PR, or manual dispatch):**
   - Validates Terraform on every push/PR touching infra/docs, then exposes a manual demo path when triggered with `workflow_dispatch`.
   - Jobs:
     - `validate`: runs fmt, tflint, tfsec, `terraform validate`, and `terraform plan` (test var-file) with artifacts.
@@ -108,6 +108,35 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   ```yaml
   # .github/workflows/prepare-for-demo.yml
+  on:
+    push:
+      branches: [main, development]
+      paths:
+        - 'infra/**'
+        - 'docs/**'
+        - '.github/workflows/prepare-for-demo.yml'
+        - 'README.md'
+    pull_request:
+      paths:
+        - 'infra/**'
+        - 'docs/**'
+        - '.github/workflows/prepare-for-demo.yml'
+        - 'README.md'
+    workflow_dispatch:
+      inputs:
+        run_demo:
+          description: 'Run demo after validation (true/false)'
+          required: false
+          default: 'true'
+        environment:
+          description: 'Environment for demo (test or prod)'
+          required: false
+          default: 'test'
+        auto_destroy:
+          description: 'Destroy after demo (true/false)'
+          required: false
+          default: 'true'
+
   jobs:
     validate:
       runs-on: ubuntu-latest
