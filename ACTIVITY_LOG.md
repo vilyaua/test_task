@@ -67,5 +67,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 20:22  | Aligned documentation with new workflow      | Updated README and design notes to reference only the `Prepare for Demo` pipeline. | ~2 min     |
 | 2025-10-20 20:26  | Updated README automation roadmap            | Replaced legacy workflow examples, outlined the new CI/CD flow, and detailed planned Lambda automations. | ~3 min     |
 | 2025-10-20 20:30  | Switched workflow credentials to variables   | Updated workflow and docs to pull AWS role/region from GitHub variables and corrected region to `eu-central-1`. | ~3 min     |
+| 2025-10-20 20:34  | Documented CLI trigger for demo workflow     | Added `gh workflow run` command and approval notes to README and pipeline guide. | ~2 min     |
+| 2025-10-20 20:36  | Fixed probe log collection region            | Pointed SSM step in `prepare-for-demo` workflow at `vars.AWS_REGION` to avoid blank region errors. | ~1 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

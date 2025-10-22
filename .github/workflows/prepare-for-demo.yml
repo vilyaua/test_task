@@ -154,7 +154,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --targets Key=tag:Project,Values=nat-alternative Key=tag:Environment,Values=${{ env.TERRAFORM_ENV }} Key=tag:Role,Values=probe \
             --parameters commands='sudo journalctl -u cloud-init --no-pager | tail -n 200' \
-            --region ${{ secrets.AWS_REGION }} \
+            --region ${{ vars.AWS_REGION }} \
             --comment "Collect probe user-data logs" \
             --output text
         continue-on-error: true

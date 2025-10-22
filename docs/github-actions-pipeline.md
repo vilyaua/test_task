@@ -164,6 +164,19 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   Approvals: add yourself/teams as required reviewers under the `demo-*` and `teardown-*` environments (`Settings → Environments`). After the `validate` job succeeds, dispatchers approve the environment gates directly in the Actions UI.
 
+## 3. Triggering the Workflow End-to-End
+
+- From the CLI:
+  ```bash
+  gh workflow run "Prepare for Demo" \
+    --ref main \
+    --field run_demo=true \
+    --field environment=test \
+    --field auto_destroy=true
+  ```
+- The run pauses twice—first at `demo-test`, then at `teardown-test` (if `auto_destroy=true`). Approve each environment in the Actions UI to proceed.
+- Set `run_demo=false` when you only need the validation job.
+
 ## 3. Test Scenario Execution
 - Launch lightweight probe instances in private subnets (t3.nano) using Terraform; user data runs outbound checks (curl to public endpoints, DNS lookups).
 - Collect probe logs via SSM or CloudWatch Logs; the workflow downloads and inspects them for success markers.

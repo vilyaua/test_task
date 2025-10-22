@@ -171,6 +171,15 @@ Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
   2. Run `verify_nat.sh`, show CloudWatch metrics/flow logs.
   3. Trigger synthetic traffic via probes; present dashboards/alerts.
   4. Manually stop a NAT instance and demonstrate Lambda-driven failover once implemented.
+  5. (Optional) Kick off the full CI + demo flow from the CLI:
+     ```bash
+     gh workflow run "Prepare for Demo" \
+       --ref main \
+       --field run_demo=true \
+       --field environment=test \
+       --field auto_destroy=true
+     ```
+     Approve `demo-test` and `teardown-test` when prompted in the Actions UI.
 
 See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda roadmap.
 
