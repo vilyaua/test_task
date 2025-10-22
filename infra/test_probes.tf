@@ -12,7 +12,9 @@ locals {
     systemctl enable --now amazon-ssm-agent
 
     # Install minimal tooling for outbound checks
-    dnf install -y curl bind-utils traceroute amazon-cloudwatch-agent >/dev/null
+    dnf install -y curl bind-utils traceroute >/dev/null
+    curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm
+    rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm >/dev/null
 
     CW_LOG_GROUP_PROBE="${aws_cloudwatch_log_group.probes.name}"
     cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CONFIG
@@ -35,6 +37,7 @@ locals {
     CONFIG
 
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+    systemctl enable --now amazon-cloudwatch-agent
 
     endpoints=(
       "https://checkip.amazonaws.com"

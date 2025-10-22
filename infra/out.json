@@ -1,0 +1,1 @@
+{"generatedAt": "2025-10-22T23:17:35.919294+00:00", "lookbackMinutes": 30, "maxEvents": 200, "logGroups": [{"logGroup": "/nat/nat-alternative-test/nat", "eventCount": 0, "events": []}, {"logGroup": "/nat/nat-alternative-test/probe", "eventCount": 0, "events": []}]}
