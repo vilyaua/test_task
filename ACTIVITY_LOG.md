@@ -73,5 +73,6 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-20 20:46  | Assigned unique CIDRs per environment        | Set explicit test/prod VPC ranges and documented the separation to prevent overlap. | ~2 min     |
 | 2025-10-22 22:05  | Built CloudWatch logging + collector Lambda  | Added encrypted log groups, EC2 CloudWatch agent config, and a Python log-collector Lambda with X-Ray/tracing-enabled execution. | ~18 min    |
 | 2025-10-22 22:42  | Hardened IAM + log encryption fallbacks      | Granted GitHub/Terraform roles instance-profile rights, added KMS defaults for app log groups, and expanded key policy coverage. | ~8 min     |
+| 2025-10-22 22:57  | Aligned app logs with flow-log CMK           | Reused the existing `nat-kms` key for NAT/probe log groups and simplified KMS fallbacks to prefer the shared CMK. | ~3 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

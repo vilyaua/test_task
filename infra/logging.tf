@@ -79,14 +79,13 @@ locals {
 }
 
 locals {
-  app_logs_kms_candidates = [
+  app_logs_kms_candidates = compact([
     var.app_logs_kms_key_arn,
     var.app_logs_kms_key_alias != "" ? data.aws_kms_key.app_logs_alias[0].arn : "",
-    try(aws_kms_key.logs[0].arn, ""),
-    can(regex(":alias/", local.flow_logs_kms_arn)) ? "" : local.flow_logs_kms_arn,
+    local.flow_logs_kms_arn,
     "alias/aws/logs"
-  ]
-  app_logs_kms_arn = compact(local.app_logs_kms_candidates)[0]
+  ])
+  app_logs_kms_arn = local.app_logs_kms_candidates[0]
 }
 
 resource "aws_cloudwatch_log_group" "vpc_flow" {
