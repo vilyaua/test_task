@@ -31,16 +31,16 @@ resource "aws_iam_role_policy_attachment" "log_collector_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-data "aws_iam_policy_document" "log_collector_permissions" {
-  statement {
-    effect    = "Allow"
-    actions   = ["logs:DescribeLogGroups"]
-    resources = ["*"]
-  }
+resource "aws_iam_role_policy_attachment" "log_collector_xray" {
+  role       = aws_iam_role.log_collector.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
 
+data "aws_iam_policy_document" "log_collector_permissions" {
   statement {
     effect = "Allow"
     actions = [
+      "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
       "logs:GetLogEvents",
       "logs:FilterLogEvents"
@@ -80,6 +80,10 @@ resource "aws_lambda_function" "log_collector" {
     }
   }
 
+  tracing_config {
+    mode = "Active"
+  }
+
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-log-collector"
   })
@@ -88,6 +92,7 @@ resource "aws_lambda_function" "log_collector" {
 resource "aws_cloudwatch_log_group" "log_collector_lambda" {
   name              = "/aws/lambda/${aws_lambda_function.log_collector.function_name}"
   retention_in_days = var.app_log_retention_days
+  kms_key_id        = local.flow_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-log-collector-lg"

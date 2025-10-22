@@ -44,7 +44,10 @@ data "aws_iam_policy_document" "logs_kms" {
       test     = "StringEquals"
       variable = "kms:EncryptionContext:aws:logs:arn"
       values = [
-        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/${local.prefix}"
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/${local.prefix}",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/nat/${local.prefix}/nat",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/nat/${local.prefix}/probe",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.prefix}-log-collector"
       ]
     }
   }
@@ -83,6 +86,7 @@ resource "aws_cloudwatch_log_group" "vpc_flow" {
 resource "aws_cloudwatch_log_group" "nat_instances" {
   name              = "/nat/${local.prefix}/nat"
   retention_in_days = var.app_log_retention_days
+  kms_key_id        = local.flow_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-nat-logs"
@@ -93,6 +97,7 @@ resource "aws_cloudwatch_log_group" "nat_instances" {
 resource "aws_cloudwatch_log_group" "probes" {
   name              = "/nat/${local.prefix}/probe"
   retention_in_days = var.app_log_retention_days
+  kms_key_id        = local.flow_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-probe-logs"
