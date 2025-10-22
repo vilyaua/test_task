@@ -91,11 +91,11 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
     --policy-document file://infra/policies/github-actions-policy.json
   ```
 
-- **GitHub secrets:** Store the role ARN and default region as `AWS_ROLE_TO_ASSUME` and `AWS_REGION`.
+- **GitHub variables:** Store the role ARN and default region as repository-level variables (`AWS_ROLE_TO_ASSUME`, `AWS_REGION`).
 
   ```bash
-  gh secret set AWS_ROLE_TO_ASSUME --body "arn:aws:iam::165820787764:role/github-actions-terraform"
-  gh secret set AWS_REGION --body "us-east-1"
+  gh variable set AWS_ROLE_TO_ASSUME --body "arn:aws:iam::165820787764:role/github-actions-terraform"
+  gh variable set AWS_REGION --body "eu-central-1"
   ```
 
 ## 2. Workflow
@@ -118,8 +118,8 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
             terraform_version: 1.13.3
         - uses: aws-actions/configure-aws-credentials@v4
           with:
-            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-            aws-region: ${{ secrets.AWS_REGION }}
+            role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+            aws-region: ${{ vars.AWS_REGION }}
         - run: terraform init -input=false -backend-config=backend-test.hcl
           working-directory: infra
         - run: terraform plan -var-file=environments/test/vars.tfvars -out=tfplan
@@ -137,8 +137,8 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
             terraform_version: 1.13.3
         - uses: aws-actions/configure-aws-credentials@v4
           with:
-            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-            aws-region: ${{ secrets.AWS_REGION }}
+            role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+            aws-region: ${{ vars.AWS_REGION }}
         - run: terraform apply -auto-approve tfplan
           working-directory: infra
         - run: ./scripts/verify_nat.sh ${{ env.TERRAFORM_ENV }}
@@ -156,8 +156,8 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
             terraform_version: 1.13.3
         - uses: aws-actions/configure-aws-credentials@v4
           with:
-            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-            aws-region: ${{ secrets.AWS_REGION }}
+            role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+            aws-region: ${{ vars.AWS_REGION }}
         - run: terraform destroy -auto-approve -var-file=environments/${{ env.TERRAFORM_ENV }}/vars.tfvars
           working-directory: infra
   ```
