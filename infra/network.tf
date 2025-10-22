@@ -73,6 +73,7 @@ resource "aws_route_table" "private" {
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-private-rt-${each.key}"
+    Tier = "private"
   })
 }
 
