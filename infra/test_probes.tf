@@ -49,7 +49,6 @@ locals {
         echo "$(date --iso-8601=seconds) [INFO] curl $${endpoint} succeeded: $(head -n 1 /tmp/probe.out)"
       else
         echo "$(date --iso-8601=seconds) [ERROR] curl $${endpoint} failed"
-        shutdown -h now || poweroff || true
         exit 2
       fi
     done
@@ -58,17 +57,19 @@ locals {
       echo "$(date --iso-8601=seconds) [INFO] DNS lookup succeeded: $(head -n 1 /tmp/dns.out)"
     else
       echo "$(date --iso-8601=seconds) [ERROR] DNS lookup failed"
-      shutdown -h now || poweroff || true
       exit 3
     fi
 
     echo "$(date --iso-8601=seconds) [INFO] Traceroute sample to 1.1.1.1"
     traceroute -w 2 -q 1 1.1.1.1 | head -n 10
 
-    echo "$(date --iso-8601=seconds) [INFO] NAT connectivity probe completed successfully"
+    echo "$(date --iso-8601=seconds) [INFO] NAT connectivity probe completed successfully; entering standby for health monitoring"
 
-    # Terminate the instance once tests have finished to avoid ongoing costs.
-    shutdown -h now || poweroff || true
+    # Keep instance online for subsequent health checks and log collection.
+    while true; do
+      echo "$(date --iso-8601=seconds) [INFO] Heartbeat: probe instance idle" >>"$${LOG_FILE}"
+      sleep 5
+    done
   EOF
 }
 
