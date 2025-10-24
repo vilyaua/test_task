@@ -104,12 +104,26 @@ done
 
 probe_json=$(terraform output -json probe_instance_ids 2>/dev/null || echo '{}')
 if [[ $(echo "${probe_json}" | jq 'length') -gt 0 ]]; then
-  log "Waiting for probe instances to terminate"
-  ids=$(echo "${probe_json}" | jq -r '.[]')
-  if [[ -n "${ids}" ]]; then
-    aws ec2 wait instance-terminated --region "${REGION}" --instance-ids ${ids} || {
-      log "WARNING: Timeout waiting for probe instances to terminate"
-    }
+  probe_ids=()
+  while IFS= read -r line; do
+    [[ -n "${line}" ]] && probe_ids+=("${line}")
+  done < <(echo "${probe_json}" | jq -r '.[]')
+
+  if [[ ${#probe_ids[@]} -eq 0 ]]; then
+    log "No probe instances reported by Terraform output; skipping probe checks"
+  else
+    log "Checking probe instance states: ${probe_ids[*]}"
+    probe_state_output=$(aws ec2 describe-instances \
+      --region "${REGION}" \
+      --instance-ids "${probe_ids[@]}" \
+      --query 'Reservations[].Instances[].{Id:InstanceId,State:State.Name}' \
+      --output json)
+
+    for row in $(echo "$probe_state_output" | jq -c '.[]'); do
+      id=$(echo "$row" | jq -r '.Id')
+      state=$(echo "$row" | jq -r '.State')
+      log "Probe instance ${id} is ${state}"
+    done
   fi
 fi
 

@@ -82,6 +82,12 @@ variable "flow_log_retention_days" {
   default     = 30
 }
 
+variable "app_log_retention_days" {
+  description = "Retention period for application logs (NAT instances, probes)."
+  type        = number
+  default     = 14
+}
+
 variable "logs_kms_key_arn" {
   description = "Optional existing KMS key ARN for encrypting VPC flow logs. Leave empty to create a dedicated key."
   type        = string
@@ -90,6 +96,18 @@ variable "logs_kms_key_arn" {
 
 variable "logs_kms_key_alias" {
   description = "Optional existing KMS CMK alias (e.g., alias/nat-kms). Used when ARN is not provided."
+  type        = string
+  default     = ""
+}
+
+variable "app_logs_kms_key_arn" {
+  description = "Optional existing KMS key ARN for application log groups. Leave empty to reuse managed defaults."
+  type        = string
+  default     = ""
+}
+
+variable "app_logs_kms_key_alias" {
+  description = "Optional existing KMS CMK alias for application log groups (e.g., alias/nat-app-logs)."
   type        = string
   default     = ""
 }

@@ -37,3 +37,6 @@ Thumbs.db
 # Generated documentation assets
 docs/*.png
 docs/*.svg
+
+# Terraform Lambda build artifacts
+infra/lambda/**/*.zip
