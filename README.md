@@ -1,4 +1,4 @@
-# Cloud SysAdmin Technical Exercise — 2025-09
+# Cloud SysAdmin Technical Exercise — 2025-10
 
 ## Exercise: Design a Highly Available AWS-Based NAT Gateway Alternative
 
