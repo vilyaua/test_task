@@ -8,8 +8,36 @@ locals {
 
     echo "$(date --iso-8601=seconds) [INFO] Starting NAT connectivity probe"
 
-    # Install minimal tooling for outbound checks
-    dnf install -y curl bind-utils traceroute >/dev/null
+    # Ensure the SSM agent is available for log collection
+    systemctl enable --now amazon-ssm-agent
+
+    # Install minimal tooling for outbound checks (curl ships via curl-minimal)
+    dnf install -y bind-utils traceroute >/dev/null
+    curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm
+    rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm >/dev/null
+
+    CW_LOG_GROUP_PROBE="${aws_cloudwatch_log_group.probes.name}"
+    cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CONFIG
+    {
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/var/log/nat-probe.log",
+                "log_group_name": "$${CW_LOG_GROUP_PROBE}",
+                "log_stream_name": "probe-{instance_id}",
+                "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+              }
+            ]
+          }
+        }
+      }
+    }
+    CONFIG
+
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+    systemctl enable --now amazon-cloudwatch-agent
 
     endpoints=(
       "https://checkip.amazonaws.com"
@@ -21,7 +49,6 @@ locals {
         echo "$(date --iso-8601=seconds) [INFO] curl $${endpoint} succeeded: $(head -n 1 /tmp/probe.out)"
       else
         echo "$(date --iso-8601=seconds) [ERROR] curl $${endpoint} failed"
-        shutdown -h now || poweroff || true
         exit 2
       fi
     done
@@ -30,17 +57,19 @@ locals {
       echo "$(date --iso-8601=seconds) [INFO] DNS lookup succeeded: $(head -n 1 /tmp/dns.out)"
     else
       echo "$(date --iso-8601=seconds) [ERROR] DNS lookup failed"
-      shutdown -h now || poweroff || true
       exit 3
     fi
 
     echo "$(date --iso-8601=seconds) [INFO] Traceroute sample to 1.1.1.1"
     traceroute -w 2 -q 1 1.1.1.1 | head -n 10
 
-    echo "$(date --iso-8601=seconds) [INFO] NAT connectivity probe completed successfully"
+    echo "$(date --iso-8601=seconds) [INFO] NAT connectivity probe completed successfully; entering standby for health monitoring"
 
-    # Terminate the instance once tests have finished to avoid ongoing costs.
-    shutdown -h now || poweroff || true
+    # Keep instance online for subsequent health checks and log collection.
+    while true; do
+      echo "$(date --iso-8601=seconds) [INFO] Heartbeat: probe instance idle" >>"$${LOG_FILE}"
+      sleep 5
+    done
   EOF
 }
 
@@ -79,6 +108,7 @@ resource "aws_instance" "probe" {
   user_data_replace_on_change          = true
   instance_initiated_shutdown_behavior = "terminate"
   monitoring                           = false
+  iam_instance_profile                 = aws_iam_instance_profile.instance.name
 
   metadata_options {
     http_endpoint          = "enabled"

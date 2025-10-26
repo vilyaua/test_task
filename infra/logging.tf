@@ -5,6 +5,11 @@ data "aws_kms_key" "logs_alias" {
   key_id = var.logs_kms_key_alias
 }
 
+data "aws_kms_key" "app_logs_alias" {
+  count  = var.app_logs_kms_key_arn == "" && var.app_logs_kms_key_alias != "" ? 1 : 0
+  key_id = var.app_logs_kms_key_alias
+}
+
 data "aws_iam_policy_document" "logs_kms" {
   count = var.logs_kms_key_arn == "" && var.logs_kms_key_alias == "" ? 1 : 0
 
@@ -34,8 +39,7 @@ data "aws_iam_policy_document" "logs_kms" {
       "kms:Encrypt*",
       "kms:Decrypt",
       "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey"
+      "kms:GenerateDataKey*"
     ]
 
     resources = ["*"]
@@ -44,9 +48,25 @@ data "aws_iam_policy_document" "logs_kms" {
       test     = "StringEquals"
       variable = "kms:EncryptionContext:aws:logs:arn"
       values = [
-        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/${local.prefix}"
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/${local.prefix}",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/nat/${local.prefix}/nat",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/nat/${local.prefix}/probe",
+        "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.prefix}-log-collector"
       ]
     }
+  }
+
+  statement {
+    sid    = "AllowCloudWatchLogsDescribeKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+
+    actions   = ["kms:DescribeKey"]
+    resources = ["*"]
   }
 }
 
@@ -70,6 +90,16 @@ locals {
   ])[0]
 }
 
+locals {
+  app_logs_kms_candidates = compact([
+    var.app_logs_kms_key_arn,
+    var.app_logs_kms_key_alias != "" ? data.aws_kms_key.app_logs_alias[0].arn : "",
+    local.flow_logs_kms_arn,
+    "alias/aws/logs"
+  ])
+  app_logs_kms_arn = local.app_logs_kms_candidates[0]
+}
+
 resource "aws_cloudwatch_log_group" "vpc_flow" {
   name              = "/aws/vpc/${local.prefix}"
   retention_in_days = var.flow_log_retention_days
@@ -77,6 +107,28 @@ resource "aws_cloudwatch_log_group" "vpc_flow" {
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-flowlogs"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "nat_instances" {
+  name              = "/nat/${local.prefix}/nat"
+  retention_in_days = var.app_log_retention_days
+  kms_key_id        = local.app_logs_kms_arn
+
+  tags = merge(local.base_tags, {
+    Name = "${local.prefix}-nat-logs"
+    Role = "nat"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "probes" {
+  name              = "/nat/${local.prefix}/probe"
+  retention_in_days = var.app_log_retention_days
+  kms_key_id        = local.app_logs_kms_arn
+
+  tags = merge(local.base_tags, {
+    Name = "${local.prefix}-probe-logs"
+    Role = "probe"
   })
 }
 

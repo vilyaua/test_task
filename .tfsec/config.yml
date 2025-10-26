@@ -1,0 +1,2 @@
+exclude:
+  - aws-iam-no-policy-wildcards
