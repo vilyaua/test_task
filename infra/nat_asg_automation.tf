@@ -99,7 +99,7 @@ resource "aws_lambda_function" "nat_asg_hook" {
 resource "aws_cloudwatch_log_group" "nat_asg_hook" {
   name              = "/aws/lambda/${aws_lambda_function.nat_asg_hook.function_name}"
   retention_in_days = var.app_log_retention_days
-  kms_key_id        = local.flow_logs_kms_arn
+  kms_key_id        = var.logs_kms_key_arn != "" ? var.logs_kms_key_arn : local.app_logs_kms_arn
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-nat-asg-hook-lg"

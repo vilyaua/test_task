@@ -127,7 +127,4 @@ resource "aws_instance" "probe" {
     Role = "probe"
   })
 
-  depends_on = [
-    aws_route.private_default
-  ]
 }

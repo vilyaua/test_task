@@ -115,8 +115,6 @@ resource "aws_launch_template" "nat" {
     name = aws_iam_instance_profile.instance.name
   }
 
-  vpc_security_group_ids = [aws_security_group.nat.id]
-
   metadata_options {
     http_endpoint          = "enabled"
     http_tokens            = "required"
