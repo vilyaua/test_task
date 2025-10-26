@@ -37,6 +37,7 @@ resource "aws_iam_role_policy_attachment" "log_collector_xray" {
 }
 
 data "aws_iam_policy_document" "log_collector_permissions" {
+  #tfsec:ignore:aws-iam-no-policy-wildcards DescribeLogGroups requires wildcard resource to enumerate log groups.
   statement {
     effect = "Allow"
     actions = [
