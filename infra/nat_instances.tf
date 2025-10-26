@@ -104,17 +104,18 @@ resource "aws_security_group" "nat" {
   })
 }
 
-resource "aws_instance" "nat" {
+resource "aws_launch_template" "nat" {
   for_each = local.public_subnet_cidrs
 
-  ami                         = data.aws_ssm_parameter.al2023_ami.value
-  instance_type               = var.nat_instance_type
-  subnet_id                   = aws_subnet.public[each.key].id
-  associate_public_ip_address = true
-  source_dest_check           = false
-  vpc_security_group_ids      = [aws_security_group.nat.id]
-  user_data                   = local.nat_user_data
-  iam_instance_profile        = aws_iam_instance_profile.instance.name
+  name_prefix   = "${local.prefix}-nat-${replace(each.key, "-", "")}-"
+  image_id      = data.aws_ssm_parameter.al2023_ami.value
+  instance_type = var.nat_instance_type
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.instance.name
+  }
+
+  vpc_security_group_ids = [aws_security_group.nat.id]
 
   metadata_options {
     http_endpoint          = "enabled"
@@ -122,37 +123,96 @@ resource "aws_instance" "nat" {
     instance_metadata_tags = "enabled"
   }
 
-  root_block_device {
-    volume_size = var.nat_root_volume_size
-    volume_type = "gp3"
-    encrypted   = true
+  monitoring {
+    enabled = false
+  }
+
+  network_interfaces {
+    associate_public_ip_address = true
+    delete_on_termination       = true
+    device_index                = 0
+    subnet_id                   = aws_subnet.public[each.key].id
+    security_groups             = [aws_security_group.nat.id]
+  }
+
+  user_data = base64encode(local.nat_user_data)
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = var.nat_root_volume_size
+      volume_type           = "gp3"
+      encrypted             = true
+      delete_on_termination = true
+    }
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = merge(local.base_tags, {
+      Name = "${local.prefix}-nat-${each.key}"
+      Role = "nat"
+    })
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_autoscaling_group" "nat" {
+  for_each = local.public_subnet_cidrs
+
+  name                      = "${local.prefix}-nat-${replace(each.key, "-", "")}"
+  max_size                  = 1
+  min_size                  = 1
+  desired_capacity          = 1
+  health_check_type         = "EC2"
+  health_check_grace_period = 60
+  vpc_zone_identifier       = [aws_subnet.public[each.key].id]
+
+  launch_template {
+    id      = aws_launch_template.nat[each.key].id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "${local.prefix}-nat-${each.key}"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Project"
+    value               = var.project
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Environment"
+    value               = var.environment
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Role"
+    value               = "nat"
+    propagate_at_launch = true
   }
 
   lifecycle {
     create_before_destroy = true
   }
 
-  tags = merge(local.base_tags, {
-    Name = "${local.prefix}-nat-${each.key}"
-    Role = "nat"
-  })
+  depends_on = [aws_iam_instance_profile.instance]
 }
 
 resource "aws_eip" "nat" {
-  for_each = aws_instance.nat
+  for_each = local.public_subnet_cidrs
 
-  domain   = "vpc"
-  instance = each.value.id
+  domain = "vpc"
 
   tags = merge(local.base_tags, {
     Name = "${local.prefix}-nat-eip-${each.key}"
   })
-}
-
-resource "aws_route" "private_default" {
-  for_each = aws_route_table.private
-
-  route_table_id         = each.value.id
-  destination_cidr_block = "0.0.0.0/0"
-  network_interface_id   = aws_instance.nat[each.key].primary_network_interface_id
 }

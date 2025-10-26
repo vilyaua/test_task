@@ -58,3 +58,12 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
   - Use the verify_nat.sh script (and soon the Lambdas) to capture proof the deployment works during demos.
 
   Following this flow, every change is reviewed, validated by CI, demoed when needed, and merged into a single source of truth before production apply.
+
+  ---
+
+  ### NAT instance management (2025-10-26 refresh)
+
+  - Each Availability Zone now owns a single-instance Auto Scaling Group backed by the hardened NAT launch template.
+  - Static Elastic IPs remain allocated per AZ, but a lightweight Lambda (`nat-asg-hook`) attaches them to whichever instance the ASG launches and rewires the private route tables to the new ENI.
+  - The hook fires via EventBridge (“EC2 Instance Launch Successful”) so replacements triggered by health checks or manual instance refreshes automatically restore routing without additional tooling.
+  - Terraform continues to manage every component—ASGs, launch templates, Lambda, IAM, and EventBridge—keeping destroys/applys deterministic.

@@ -82,7 +82,7 @@ CW -.-> EC2B
 **Description of Components**
 
 * **EC2 NAT Instances (A & B):**
-  Custom AMIs with iptables masquerade enabled, running in Auto Scaling Group.
+  Single-instance Auto Scaling Groups per AZ launch the hardened NAT AMI. A Lambda hook reattaches the static Elastic IPs and rewires private route tables whenever a replacement instance comes online.
 * **NLB (Network Load Balancer):**
   Provides static IP endpoints and cross-AZ routing.
 * **Route Tables:**

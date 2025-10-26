@@ -1,9 +1,9 @@
 ## Next Steps for Demo Automation
 
-1. **Convert NAT EC2s to single-instance ASGs**
-   - Introduce a Launch Template encapsulating the current NAT user data, security group, IAM profile, and root volume settings.
-   - Create one Auto Scaling Group per AZ (desired = 1, max = 1) targeting the existing public subnets; tag each ASG/instance consistently so the rest of the tooling can find them.
-   - Update route-table attachments to reference the NAT ENI created by the ASG instances (may require a Lambda-backed custom resource or lifecycle hook to re-point routes when instances refresh).
+1. **Harden the new ASG + hook workflow**
+   - Add CloudWatch metrics/alarms on the Lambda (`nat-asg-hook`) so misfires are visible.
+   - Create a simple runbook/automation script to force an ASG instance refresh and capture the resulting logs for demos.
+   - Consider adding integration tests (e.g., via GitHub Actions) that simulate the EventBridge payload to ensure the hook continues to associate Elastic IPs and update routes as expected.
 
 2. **Enhance `demo_health` Lambda**
    - Persist each run’s summary (NAT/probe SSM status, log freshness, probe results) to DynamoDB or S3 for dashboard consumption.
