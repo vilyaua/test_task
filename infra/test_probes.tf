@@ -11,8 +11,8 @@ locals {
     # Ensure the SSM agent is available for log collection
     systemctl enable --now amazon-ssm-agent
 
-    # Install minimal tooling for outbound checks
-    dnf install -y curl bind-utils traceroute >/dev/null
+    # Install minimal tooling for outbound checks (curl ships via curl-minimal)
+    dnf install -y bind-utils traceroute >/dev/null
     curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm
     rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm >/dev/null
 

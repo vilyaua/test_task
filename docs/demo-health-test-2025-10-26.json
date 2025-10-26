@@ -1,0 +1,151 @@
+{
+  "generatedAt": "2025-10-26T14:16:22.403325+00:00",
+  "project": "nat-alternative",
+  "environment": "test",
+  "lookbackMinutes": 30,
+  "natInstances": [
+    {
+      "instanceId": "i-02eb69a4e3a0c945b",
+      "state": "running",
+      "availabilityZone": "eu-central-1a",
+      "launchTime": "2025-10-26T14:02:14+00:00",
+      "ssmPingStatus": "Online"
+    },
+    {
+      "instanceId": "i-0ae8bdfc41525958a",
+      "state": "running",
+      "availabilityZone": "eu-central-1b",
+      "launchTime": "2025-10-26T14:02:14+00:00",
+      "ssmPingStatus": "Online"
+    }
+  ],
+  "probeInstances": [
+    {
+      "instanceId": "i-09f0053ef72b422a0",
+      "state": "running",
+      "availabilityZone": "eu-central-1a",
+      "launchTime": "2025-10-26T14:03:42+00:00",
+      "ssmPingStatus": "Online"
+    },
+    {
+      "instanceId": "i-0b8ff03e96cc2abf2",
+      "state": "running",
+      "availabilityZone": "eu-central-1b",
+      "launchTime": "2025-10-26T14:03:42+00:00",
+      "ssmPingStatus": "Online"
+    }
+  ],
+  "logGroups": [
+    {
+      "logGroup": "/aws/vpc/nat-alternative-test",
+      "exists": true,
+      "latestEventTime": "2025-10-26T14:03:10+00:00",
+      "streams": [
+        {
+          "logStream": "eni-0facb1226518c7861-all",
+          "storedBytes": 0,
+          "lastEventTimestamp": 1761487438000,
+          "creationTime": 1761487476976
+        },
+        {
+          "logStream": "eni-09a34a0cbedfb76fd-all",
+          "storedBytes": 0,
+          "lastEventTimestamp": 1761487437000,
+          "creationTime": 1761487491923
+        },
+        {
+          "logStream": "eni-0d9d36bad07bbb9c6-all",
+          "storedBytes": 0,
+          "lastEventTimestamp": 1761487390000,
+          "creationTime": 1761487457717
+        }
+      ]
+    },
+    {
+      "logGroup": "/nat/nat-alternative-test/nat",
+      "exists": true,
+      "latestEventTime": "2025-10-26T14:03:01.881000+00:00",
+      "streams": [
+        {
+          "logStream": "nat-i-02eb69a4e3a0c945b",
+          "storedBytes": 0,
+          "lastEventTimestamp": 1761487548068,
+          "creationTime": 1761487551229
+        },
+        {
+          "logStream": "nat-i-0ae8bdfc41525958a",
+          "storedBytes": 0,
+          "lastEventTimestamp": 1761487381881,
+          "creationTime": 1761487382112
+        }
+      ]
+    },
+    {
+      "logGroup": "/nat/nat-alternative-test/probe",
+      "exists": true,
+      "latestEventTime": null,
+      "streams": []
+    },
+    {
+      "logGroup": "/aws/lambda/nat-alternative-test-log-collector",
+      "exists": true,
+      "latestEventTime": "2025-10-26T14:13:28.159000+00:00",
+      "streams": [
+        {
+          "logStream": "2025/10/26/[$LATEST]a157560c9a2e4939b3c5e84e3a2a8333",
+          "storedBytes": 0,
+          "lastEventTimestamp": 1761488008159,
+          "creationTime": 1761488010819
+        }
+      ]
+    }
+  ],
+  "logCollector": {
+    "generatedAt": "2025-10-26T14:16:20.379190+00:00",
+    "lookbackMinutes": 30,
+    "maxEvents": 50,
+    "logGroups": [
+      {
+        "logGroup": "/nat/nat-alternative-test/nat",
+        "eventCount": 50,
+        "events": [
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "Cloud-init v. 22.2.2 running 'init' at Sun, 26 Oct 2025 14:02:26 +0000. Up 6.40 seconds.",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: ++++++++++++++++++++++++++++++++++++++Net device info+++++++++++++++++++++++++++++++++++++++",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: +--------+------+-----------------------------+---------------+--------+-------------------+",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: | Device |  Up  |           Address           |      Mask     | Scope  |     Hw-Address    |",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: +--------+------+-----------------------------+---------------+--------+-------------------+",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: +++++++++++++++++++++++++++++Route IPv4 info+++++++++++++++++++++++++++++",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: +-------+-------------+-----------+-----------------+-----------+-------+",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },
+          {
+            "timestamp": "2025-10-26T14:02:56.882000+00:00",
+            "message": "ci-info: | Route | Destination |  Gateway  |     Genmask     | Interface | Flags |",
+            "logStream": "nat-i-0ae8bdfc41525958a"
+          },

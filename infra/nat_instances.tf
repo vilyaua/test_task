@@ -13,7 +13,7 @@ locals {
 
     # Install iptables tooling; AL2023 already ships with curl
     dnf install -y iptables-nft iptables-services
-    systemctl enable --now iptables
+    systemctl enable iptables
 
     curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm
     rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm
@@ -41,14 +41,19 @@ locals {
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
     systemctl enable --now amazon-cloudwatch-agent
 
+    # Ensure the filter table allows forwarding for traffic traversing the instance
+    iptables -F FORWARD
+    iptables -P FORWARD ACCEPT
+
     # Flush existing NAT rules and configure masquerading on the detected default interface
     primary_iface=$(ip route show default | awk 'NR==1 {print $5}')
     : "$${primary_iface:=ens5}"
     iptables -t nat -F
     iptables -t nat -A POSTROUTING -o "$${primary_iface}" -j MASQUERADE
 
-    # Persist iptables configuration
+    # Persist iptables configuration and reload the service to pick up changes
     iptables-save >/etc/sysconfig/iptables
+    systemctl restart iptables
 
     # Ensure the SSM agent is online for automation
     systemctl enable --now amazon-ssm-agent
