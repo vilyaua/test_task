@@ -210,7 +210,7 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 * [x] Implement Terraform or Pulumi stack.
 * [x] Create parameterized **test** and **prod** environments.
 * [x] Automate EC2 image creation (Packer optional).
-* [ ] Integrate health checks and dynamic routes.
+* [x] Integrate health checks and dynamic routes.
 
 ### Epic 3 — CI/CD Pipeline
 
@@ -221,8 +221,8 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 
 ### Epic 4 — Monitoring & Security
 
-* [ ] Add CloudWatch metrics and alarms for instance health.
-* [ ] Enable VPC Flow Logs and log rotation.
+* [x] Add CloudWatch metrics and alarms for instance health.
+* [x] Enable VPC Flow Logs and log rotation.
 * [x] Configure IAM roles and least privilege policies.
 * [ ] Document operational runbook (failover, maintenance).
 
