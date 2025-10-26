@@ -75,5 +75,7 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-22 22:42  | Hardened IAM + log encryption fallbacks      | Granted GitHub/Terraform roles instance-profile rights, added KMS defaults for app log groups, and expanded key policy coverage. | ~8 min     |
 | 2025-10-22 22:57  | Aligned app logs with flow-log CMK           | Reused the existing `nat-kms` key for NAT/probe log groups and simplified KMS fallbacks to prefer the shared CMK. | ~3 min     |
 | 2025-10-22 23:20  | Fixed CloudWatch agent installation          | Switched EC2 user data to install the agent via RPM and start the service so NAT/probe logs reach CloudWatch. | ~4 min     |
+| 2025-10-22 23:30  | Added demo health Lambda                     | Implemented health-report Lambda to summarize NAT/probe states, SSM connectivity, and log activity, invoking the log collector for probes. | ~10 min    |
+| 2025-10-23 21:45  | Kept probes online for health checks         | Removed automatic shutdown from probe user data so instances stay running for SSM and demo health verification. | ~2 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.
