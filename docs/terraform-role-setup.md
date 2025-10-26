@@ -15,7 +15,7 @@ aws dynamodb create-table \
 # Dedicated KMS key for VPC flow logs (reused by all environments). The template lives at `infra/policies/kms-flowlogs-policy.json`; edit the ARNs if necessary before running the command below.
 
 aws kms create-key \
-  --profile default \
+  --profile admin \
   --region eu-central-1 \
   --description "KMS key for RavenPack NAT flow logs" \
   --key-usage ENCRYPT_DECRYPT \
@@ -67,11 +67,11 @@ aws iam update-assume-role-policy \
 ## 2. Attach Deployment Permissions
 Start with a broad policy that covers VPC networking, load balancers, Lambda, observability, and IAM pass-role requirements. Tighten resources once the Terraform modules are finalized.
 
-```bash
-aws iam put-role-policy \
+``aws iam put-role-policy \
   --role-name nat-alternative-terraform \
   --policy-name TerraformNATPolicy \
-  --policy-document file://infra/policies/nat-alternative-terraform-policy.json
+  --policy-document file://infra/policies/nat-alternative-terraform-policy.json`bash
+
 
 # The DynamoDB resource scope in `nat-alternative-terraform-policy.json` uses a
 # wildcard region so Terraform can acquire locks even if the backend config or
@@ -123,8 +123,8 @@ When the KMS key policy changes (e.g., to include new log-group patterns), refre
 ```bash
 aws kms put-key-policy \
   --region eu-central-1 \
-  --profile default \
-  --key-id <kms-key-id-or-alias> \
+  --profile admin \
+  --key-id f386504d-ca09-4e54-b8bf-29842e106515 \
   --policy-name default \
   --policy file://infra/policies/kms-flowlogs-policy.json
 ```
