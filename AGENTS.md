@@ -4,7 +4,7 @@ This project defines a resilient AWS-based NAT gateway alternative. Use these gu
 
 ## Project Structure & Module Organization
 - `README.md` captures the problem statement; refresh it when architecture, workflows, or dependencies change.
-- `docs/` holds diagrams (`architecture-diagram.mmd`, exported PNG) and design notes (`docs/design-notes.md` — e.g., `/Users/vper/!coding/HR_Tasks/RavenPack/test_task/docs/design-notes.md` locally); commit regenerated assets with the Markdown.
+- `docs/` holds diagrams (`architecture.py` → `architecture.png`, legacy `architecture-diagram.mmd`) and design notes (`docs/design-notes.md` — e.g., `/Users/vper/!coding/HR_Tasks/RavenPack/test_task/docs/design-notes.md` locally); commit regenerated assets with the Markdown.
 - `infra/` (Terraform root) contains modules plus per-environment stacks; keep Lambda sources in `infra/lambda/` and automation in `infra/scripts/`.
 - `.github/workflows/` runs CI/CD; follow the existing `test`, `deploy-test`, and `deploy-prod` separation.
 - `environments/<env>/` stores backend and variable files; keep folder names short (`test`, `prod`).

@@ -49,50 +49,9 @@ This project is part of a **technical assessment** focused on architectural reas
 
 ## 🗺️ Architecture Diagram
 
-```mermaid
-flowchart TD
+![NAT Alternative Architecture](docs/architecture.png)
 
-subgraph AZ1["Availability Zone 1"]
-    EC2A[NAT EC2 Instance A<br> (ASG Member)]
-    PVA[Private Subnet A]
-end
-
-subgraph AZ2["Availability Zone 2"]
-    EC2B[NAT EC2 Instance B<br> (ASG Member)]
-    PVB[Private Subnet B]
-end
-
-IGW[Internet Gateway]
-NLB[NLB (Cross-AZ)]
-CW[CloudWatch + Alarms]
-RTB[Private Route Tables]
-
-PVA --> RTB
-PVB --> RTB
-RTB --> NLB
-NLB --> EC2A
-NLB --> EC2B
-EC2A --> IGW
-EC2B --> IGW
-
-CW -.-> EC2A
-CW -.-> EC2B
-````
-
-**Description of Components**
-
-* **EC2 NAT Instances (A & B):**
-  Single-instance Auto Scaling Groups per AZ launch the hardened NAT AMI. A Lambda hook reattaches the static Elastic IPs and rewires private route tables whenever a replacement instance comes online.
-* **NLB (Network Load Balancer):**
-  Provides static IP endpoints and cross-AZ routing.
-* **Route Tables:**
-  Private subnets forward all `0.0.0.0/0` traffic to NLB.
-* **Internet Gateway:**
-  Provides outbound connectivity to the internet.
-* **CloudWatch:**
-  Health checks, alarms, and auto-recovery for failed instances.
-
----
+> Generated with `python docs/architecture.py` using mingrammer’s Diagrams library. Re-run the script after topology changes to refresh the PNG.
 
 ## 🧮 Project Structure
 
@@ -100,9 +59,11 @@ CW -.-> EC2B
 .
 ├── README.md
 ├── docs/
-│   ├── architecture-diagram.mmd
+│   ├── architecture.py              # mingrammer Diagrams source
+│   ├── architecture.png             # rendered topology
 │   ├── design-notes.md
-│   └── github-actions-pipeline.md
+│   ├── github-actions-pipeline.md
+│   └── architecture-diagram.mmd     # legacy Mermaid draft (optional)
 ├── infra/
 │   ├── backend.tf
 │   ├── backend-test.hcl

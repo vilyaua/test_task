@@ -1,32 +1,53 @@
-flowchart TD
-    subgraph VPC["VPC: 10.0.0.0/16"]
+flowchart LR
+    subgraph VPC["VPC 10.0.0.0/16 (eu-central-1)"]
         direction LR
 
-        subgraph AZ1["us-east-1a"]
+        subgraph AZ1["AZ: eu-central-1a"]
             direction TB
-            PUB1["Public Subnet A<br/>10.0.0.0/20"] --> NAT1["NAT Instance A<br/>t3.small + EIP"]
-            PRIV1["Private Subnet A<br/>10.0.128.0/20"] --> RT1["Private Route Table A"]
-            RT1 -->|0.0.0.0/0| NAT1
+            PUB1["Public Subnet<br/>10.0.16.0/20"]
+            PRIV1["Private Subnet<br/>10.0.48.0/20"]
+            ASG1["NAT ASG<br/>(desired=1)"]
+            NAT1["NAT Instance<br/>(latest launch)"]
+            PUB1 --> ASG1 --> NAT1
+            PRIV1 --> RT1["Private Route Table A"] -->|0.0.0.0/0| NAT1
+            Probe1["Probe Instance"] --> PRIV1
         end
 
-        subgraph AZ2["us-east-1b"]
+        subgraph AZ2["AZ: eu-central-1b"]
             direction TB
-            PUB2["Public Subnet B<br/>10.0.16.0/20"] --> NAT2["NAT Instance B<br/>t3.small + EIP"]
-            PRIV2["Private Subnet B<br/>10.0.144.0/20"] --> RT2["Private Route Table B"]
-            RT2 -->|0.0.0.0/0| NAT2
+            PUB2["Public Subnet<br/>10.0.32.0/20"]
+            PRIV2["Private Subnet<br/>10.0.64.0/20"]
+            ASG2["NAT ASG<br/>(desired=1)"]
+            NAT2["NAT Instance<br/>(latest launch)"]
+            PUB2 --> ASG2 --> NAT2
+            PRIV2 --> RT2["Private Route Table B"] -->|0.0.0.0/0| NAT2
+            Probe2["Probe Instance"] --> PRIV2
         end
 
         IGW["Internet Gateway"]
-        NAT1 -->|Egress| IGW
-        NAT2 -->|Egress| IGW
+        NAT1 --> IGW
+        NAT2 --> IGW
     end
 
-    note right of NAT1
-        "Security Group"
-        "- ingress from private CIDRs"
-        "- outbound any"
+    subgraph Automation["Automation & Observability"]
+        EB["EventBridge Rule<br/>EC2 Launch Successful"]
+        Hook["nat-asg-hook Lambda<br/>(disable source/dest, route, EIP)"]
+        CW["CloudWatch Logs"]
+        LC["log-collector Lambda"]
+        DH["demo-health Lambda"]
+        SSM["AWS Systems Manager"]
     end
 
-    note right of IGW
-        "Elastic IPs ensure stable outbound IPs"
-    end
+    ASG1 -. launch lifecycle .-> EB
+    ASG2 -. launch lifecycle .-> EB
+    EB --> Hook --> NAT1
+    Hook --> NAT2
+    Probe1 -->|Logs| CW
+    Probe2 -->|Logs| CW
+    NAT1 -->|Flow/NAT logs| CW
+    NAT2 -->|Flow/NAT logs| CW
+    CW --> LC --> DH
+    NAT1 -->|SSM Agent| SSM
+    NAT2 -->|SSM Agent| SSM
+    Probe1 -->|SSM Agent| SSM
+    Probe2 -->|SSM Agent| SSM
