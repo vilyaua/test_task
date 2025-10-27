@@ -15,6 +15,7 @@ This project defines a resilient AWS-based NAT gateway alternative. Use these gu
 - `terraform validate infra/` — schema validation shared with CI.
 - `terraform plan -var-file=environments/test/vars.tfvars` — verify desired changes; swap var-files per target environment.
 - `python -m pytest infra/lambda` — exercise Lambda helpers when Python code exists.
+- `REPORT_FILE=verification-report.md ./scripts/verify_nat.sh <env>` — capture NAT/probe health along with a Markdown artifact.
 - Request elevated command approvals before leaving the sandbox (e.g., provider downloads, AWS CLI calls); use the CLI’s escalation prompt with a one-sentence justification.
 
 ## Coding Style & Naming Conventions

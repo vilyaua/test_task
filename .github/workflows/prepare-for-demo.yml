@@ -146,18 +146,96 @@ jobs:
 
       - name: Run verification script
         working-directory: infra
+        env:
+          REPORT_FILE: ../verification-report.md
         run: ./scripts/verify_nat.sh ${{ env.TERRAFORM_ENV }}
 
       - name: Collect probe logs
+        id: probe_logs
         run: |
-          aws ssm send-command \
+          set -euo pipefail
+
+          REPORT_DIR="${PWD}"
+          COMMAND_JSON="${REPORT_DIR}/probe-command.json"
+          INVOCATIONS_JSON="${REPORT_DIR}/probe-command-invocations.json"
+          LOG_SUMMARY="${REPORT_DIR}/probe-logs.txt"
+
+          send_output=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets Key=tag:Project,Values=nat-alternative Key=tag:Environment,Values=${{ env.TERRAFORM_ENV }} Key=tag:Role,Values=probe \
             --parameters commands='sudo journalctl -u cloud-init --no-pager | tail -n 200' \
             --region ${{ vars.AWS_REGION }} \
             --comment "Collect probe user-data logs" \
-            --output text
+            --output json)
+
+          echo "$send_output" >"${COMMAND_JSON}"
+          command_id=$(echo "$send_output" | jq -r '.Command.CommandId // empty')
+
+          if [[ -z "${command_id}" ]]; then
+            printf 'No probe instances matched the tag selectors.\n' >"${LOG_SUMMARY}"
+            printf '{"CommandInvocations":[]}' >"${INVOCATIONS_JSON}"
+            exit 0
+          fi
+
+          for attempt in {1..30}; do
+            statuses=$(aws ssm list-command-invocations \
+              --command-id "${command_id}" \
+              --region ${{ vars.AWS_REGION }} \
+              --query 'CommandInvocations[].Status' \
+              --output text 2>/dev/null || true)
+
+            if [[ -z "${statuses}" ]]; then
+              sleep 5
+              continue
+            fi
+
+            incomplete=0
+            for status in ${statuses}; do
+              case "${status}" in
+                Pending|InProgress|Cancelling)
+                  incomplete=1
+                  ;;
+              esac
+            done
+
+            if [[ ${incomplete} -eq 0 ]]; then
+              break
+            fi
+
+            sleep 5
+          done
+
+          aws ssm list-command-invocations \
+            --command-id "${command_id}" \
+            --details \
+            --region ${{ vars.AWS_REGION }} \
+            --output json >"${INVOCATIONS_JSON}" || true
+
+          if jq -e '.CommandInvocations | length > 0' "${INVOCATIONS_JSON}" >/dev/null 2>&1; then
+            jq -r '.CommandInvocations[] | ["InstanceId: " + (.InstanceId // "<unknown>"),
+                     "Status: " + (.StatusDetails // "<unknown>"),
+                     "----- stdout -----",
+                     (.StandardOutputContent // "<empty>"),
+                     "----- stderr -----",
+                     (.StandardErrorContent // "<empty>"),
+                     ""] | @text' "${INVOCATIONS_JSON}" >"${LOG_SUMMARY}"
+          else
+            printf 'No command invocations were returned (probes may have completed before logging).\n' >"${LOG_SUMMARY}"
+          fi
         continue-on-error: true
+
+      - name: Upload verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ env.TERRAFORM_ENV }}
+          path: |
+            verification-report.md
+            probe-command.json
+            probe-command-invocations.json
+            probe-logs.txt
+            log-collector-output.json
+            demo-health-output.json
 
   demo_destroy:
     name: CleanUp Demo Infra
