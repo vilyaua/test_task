@@ -2,8 +2,8 @@
 
 1. **Harden the new ASG + hook workflow**
    - Add CloudWatch metrics/alarms on the Lambda (`nat-asg-hook`) so misfires are visible.
-   - Create a simple runbook/automation script to force an ASG instance refresh and capture the resulting logs for demos.
-   - Consider adding integration tests (e.g., via GitHub Actions) that simulate the EventBridge payload to ensure the hook continues to associate Elastic IPs and update routes as expected.
+   - Create a simple runbook/automation script to force an ASG instance refresh and capture the resulting logs for demos. ✅ Verified manually on 2025-10-27; automation script still outstanding.
+   - Add an integration test (GitHub Actions or local harness) that simulates the EventBridge payload so the hook’s AZ parsing, source/dest update, and route replacement stay covered.
 
 2. **Enhance `demo_health` Lambda**
    - Persist each run’s summary (NAT/probe SSM status, log freshness, probe results) to DynamoDB or S3 for dashboard consumption.

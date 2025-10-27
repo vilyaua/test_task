@@ -61,9 +61,9 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
 
   ---
 
-  ### NAT instance management (2025-10-26 refresh)
+### NAT instance management (2025-10-26 refresh)
 
   - Each Availability Zone now owns a single-instance Auto Scaling Group backed by the hardened NAT launch template.
   - Static Elastic IPs remain allocated per AZ, but a lightweight Lambda (`nat-asg-hook`) attaches them to whichever instance the ASG launches and rewires the private route tables to the new ENI.
   - The hook fires via EventBridge (“EC2 Instance Launch Successful”) so replacements triggered by health checks or manual instance refreshes automatically restore routing without additional tooling.
-  - Terraform continues to manage every component—ASGs, launch templates, Lambda, IAM, and EventBridge—keeping destroys/applys deterministic.
+  - Terraform continues to manage every component—ASGs, launch templates, Lambda, IAM, and EventBridge—keeping destroys/applys deterministic. NAT ASGs now depend explicitly on the hook/EventBridge resources so the first post-apply launch can’t race the automation.
