@@ -44,15 +44,21 @@ data "aws_iam_policy_document" "nat_asg_hook" {
   }
 
   statement {
-    effect    = "Allow"
-    actions   = ["ec2:ReplaceRoute"]
+    effect = "Allow"
+    actions = [
+      "ec2:ReplaceRoute",
+      "ec2:CreateRoute"
+    ]
     resources = local.nat_route_table_arns
   }
 
   statement {
-    effect    = "Allow"
-    actions   = ["ec2:AssociateAddress"]
-    resources = local.nat_eip_arns
+    effect  = "Allow"
+    actions = ["ec2:AssociateAddress"]
+    resources = concat(
+      local.nat_eip_arns,
+      ["arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:network-interface/*"]
+    )
   }
 }
 

@@ -39,11 +39,24 @@ def _associate_eip(eni_id: str, allocation_id: str) -> None:
 
 
 def _replace_route(route_table_id: str, eni_id: str) -> None:
-    EC2.replace_route(
-        RouteTableId=route_table_id,
-        DestinationCidrBlock="0.0.0.0/0",
-        NetworkInterfaceId=eni_id,
-    )
+    """Ensure the private route table sends 0.0.0.0/0 traffic through the NAT ENI."""
+    try:
+        EC2.replace_route(
+            RouteTableId=route_table_id,
+            DestinationCidrBlock="0.0.0.0/0",
+            NetworkInterfaceId=eni_id,
+        )
+    except ClientError as exc:
+        error_code = exc.response["Error"].get("Code")
+        # When the route is absent (fresh ASG bring-up), fall back to CreateRoute.
+        if error_code in {"InvalidRoute.NotFound", "InvalidParameterValue"}:
+            EC2.create_route(
+                RouteTableId=route_table_id,
+                DestinationCidrBlock="0.0.0.0/0",
+                NetworkInterfaceId=eni_id,
+            )
+        else:
+            raise
 
 
 def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
