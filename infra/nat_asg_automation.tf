@@ -2,7 +2,7 @@ locals {
   nat_route_table_map  = { for az, rt in aws_route_table.private : az => rt.id }
   nat_route_table_arns = [for rt in aws_route_table.private : rt.arn]
   nat_eip_arns         = [for eip in aws_eip.nat : eip.arn]
-  nat_asg_names        = [for asg in aws_autoscaling_group.nat : asg.name]
+  nat_asg_names        = [for az in keys(local.public_subnet_cidrs) : "${local.prefix}-nat-${replace(az, "-", "")}"]
 }
 
 data "archive_file" "nat_asg_hook" {

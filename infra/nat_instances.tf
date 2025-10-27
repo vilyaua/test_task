@@ -202,7 +202,13 @@ resource "aws_autoscaling_group" "nat" {
     create_before_destroy = true
   }
 
-  depends_on = [aws_iam_instance_profile.instance]
+  depends_on = [
+    aws_iam_instance_profile.instance,
+    aws_lambda_function.nat_asg_hook,
+    aws_cloudwatch_event_rule.nat_asg_hook,
+    aws_cloudwatch_event_target.nat_asg_hook,
+    aws_lambda_permission.nat_asg_hook
+  ]
 }
 
 resource "aws_eip" "nat" {

@@ -7,7 +7,7 @@ Tracks infra defects identified during operations, alongside the applied fixes a
 - **NAT ASG hook failed to prepare replacement instances**  
   - *Symptoms*: After switching NAT hosts to an Auto Scaling Group, new instances kept `SourceDestCheck=true`, private route tables lost their 0.0.0.0/0 targets, and probe instances never reached SSM (`PingStatus: Unknown`). EventBridge showed the hook firing but CloudWatch logs recorded `ValueError` about missing Availability Zones.  
   - *Cause*: Auto Scaling’s launch-success events sometimes emit the AZ under `detail["Details"]["Availability Zone"]`. The original hook only read `detail["AvailabilityZone"]`, so it bailed out before disabling source/dest checks or recreating the default route.  
-  - *Fix*: Updated `infra/lambda/nat_asg_hook/main.py` to pull the AZ from all known fields, disable source/dest checks via `ec2:ModifyInstanceAttribute`, and fall back to `CreateRoute` when the default route is absent. Expanded the hook IAM policy in `infra/nat_asg_automation.tf` accordingly so fresh deployments configure routing without manual intervention.
+  - *Fix*: Updated `infra/lambda/nat_asg_hook/main.py` to pull the AZ from all known fields, disable source/dest checks via `ec2:ModifyInstanceAttribute`, and fall back to `CreateRoute` when the default route is absent. Expanded the hook IAM policy in `infra/nat_asg_automation.tf` and forced NAT ASGs to depend on the hook/EventBridge resources (`infra/nat_instances.tf`) so the first launch happens only after automation is in place.
 
 ## 2025-10-26
 
