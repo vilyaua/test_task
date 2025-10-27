@@ -112,7 +112,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
   - Validates Terraform on every push/PR touching infra/docs, then exposes a manual demo path when triggered with `workflow_dispatch`.
   - Jobs:
     - `validate`: runs fmt, tflint, tfsec, `terraform validate`, and `terraform plan` (test var-file) with artifacts.
-    - `Demo (apply)`: gated by the `demo-<env>` environment. Once approved, plans/applies against the selected env, runs verification script, and gathers probe logs.
+    - `Demo (apply)`: gated by the `demo-<env>` environment. Once approved, plans/applies against the selected env, runs the verification script (which emits `verification-report.md` plus Lambda summaries), pulls probe logs via SSM, and uploads all evidence (`verification-report.md`, `log-collector-output.json`, `demo-health-output.json`, probe command output) as an artifact for reviewers.
     - `Demo (destroy)`: optional teardown gated by the `teardown-<env>` environment when `auto_destroy=true`.
 
   ```yaml
@@ -179,8 +179,45 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
             aws-region: ${{ vars.AWS_REGION }}
         - run: terraform apply -auto-approve tfplan
           working-directory: infra
-        - run: ./scripts/verify_nat.sh ${{ env.TERRAFORM_ENV }}
+        - name: Run verification script
           working-directory: infra
+          env:
+            REPORT_FILE: ../verification-report.md
+          run: ./scripts/verify_nat.sh ${{ env.TERRAFORM_ENV }}
+        - name: Collect probe logs
+          run: |
+            set -euo pipefail
+            send_output=$(aws ssm send-command \
+              --document-name "AWS-RunShellScript" \
+              --targets Key=tag:Project,Values=nat-alternative Key=tag:Environment,Values=${{ env.TERRAFORM_ENV }} Key=tag:Role,Values=probe \
+              --parameters commands='sudo journalctl -u cloud-init --no-pager | tail -n 200' \
+              --region ${{ vars.AWS_REGION }} \
+              --comment "Collect probe user-data logs" \
+              --output json)
+            echo "$send_output" > probe-command.json
+            command_id=$(echo "$send_output" | jq -r '.Command.CommandId // empty')
+            if [[ -n "$command_id" ]]; then
+              aws ssm wait command-executed --command-id "$command_id" --region ${{ vars.AWS_REGION }} || true
+              aws ssm list-command-invocations --command-id "$command_id" --details --region ${{ vars.AWS_REGION }} --output json > probe-command-invocations.json || true
+              if jq -e '.CommandInvocations | length > 0' probe-command-invocations.json >/dev/null 2>&1; then
+                jq -r '.CommandInvocations[] | ["InstanceId: " + (.InstanceId // "<unknown>"), "Status: " + (.StatusDetails // "<unknown>"), "----- stdout -----", (.StandardOutputContent // "<empty>"), "----- stderr -----", (.StandardErrorContent // "<empty>"), ""] | @text' probe-command-invocations.json > probe-logs.txt
+              else
+                printf 'No command invocations were returned.\n' > probe-logs.txt
+              fi
+            else
+              printf 'No probe instances matched the tag selectors.\n' > probe-logs.txt
+            fi
+          continue-on-error: true
+        - name: Upload verification artifacts
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: verification-${{ env.TERRAFORM_ENV }}
+            path: |
+              verification-report.md
+              probe-command.json
+              probe-command-invocations.json
+              probe-logs.txt
     demo_destroy:
       environment: teardown-${{ github.event.inputs.environment }}
       needs: demo_apply
@@ -217,14 +254,14 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
 ## 3. Test Scenario Execution
 - Launch lightweight probe instances in private subnets (t3.nano) using Terraform; user data runs outbound checks (curl to public endpoints, DNS lookups).
-- Collect probe logs via SSM or CloudWatch Logs; the workflow downloads and inspects them for success markers.
+- Collect probe logs via SSM or CloudWatch Logs; the workflow now stores the command output as an artifact alongside `verification-report.md` for reviewers.
 - Optionally add synthetic tests (AWS SSM Session Manager automation or AWS Systems Manager RunCommand) triggered from the workflow for additional verification.
 
 ```bash
 # infra/scripts/verify_nat.sh
-./scripts/verify_nat.sh test
+REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
 # Confirms NAT instances are running, private routes target their ENIs,
-# and waits for probe instances to terminate gracefully.
+# and produces a Markdown summary for demo evidence.
 ```
 
 ## 4. Cost Control & Safety Nets

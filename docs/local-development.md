@@ -68,8 +68,12 @@ Review the plan output and ensure only intended changes are present.
 ## 4. Probe Script (optional)
 After running `terraform apply`, verify NAT connectivity:
 ```bash
-./scripts/verify_nat.sh test
+REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
+# Also runs the log-collector and demo-health Lambdas and saves their JSON to
+# `log-collector-output.json` / `demo-health-output.json`. Disable by setting
+# `INVOKE_LAMBDAS=0` if you only need the EC2/route checks.
 ```
+The script logs to stdout and, when `REPORT_FILE` is set, saves a Markdown summary with NAT/probe inventories, route-table targets, and SSM status checks.
 
 ## 5. Backend Notes
 - Environment variables live in `infra/environments/<env>/vars.tfvars` (`prod`, `test`, etc.).
