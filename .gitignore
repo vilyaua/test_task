@@ -35,7 +35,7 @@ Thumbs.db
 .vscode/
 
 # Generated documentation assets
-docs/*.png
+#docs/*.png
 docs/*.svg
 
 # Terraform Lambda build artifacts
