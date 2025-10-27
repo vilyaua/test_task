@@ -31,7 +31,8 @@
             "arn:aws:logs:eu-central-1:165820787764:log-group:/nat/nat-alternative-*/nat",
             "arn:aws:logs:eu-central-1:165820787764:log-group:/nat/nat-alternative-*/probe",
             "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-log-collector",
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-demo-health"
+            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-demo-health",
+            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-nat-asg-hook"
           ]
         }
       }

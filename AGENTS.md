@@ -15,6 +15,7 @@ This project defines a resilient AWS-based NAT gateway alternative. Use these gu
 - `terraform validate infra/` — schema validation shared with CI.
 - `terraform plan -var-file=environments/test/vars.tfvars` — verify desired changes; swap var-files per target environment.
 - `python -m pytest infra/lambda` — exercise Lambda helpers when Python code exists.
+- Request elevated command approvals before leaving the sandbox (e.g., provider downloads, AWS CLI calls); use the CLI’s escalation prompt with a one-sentence justification.
 
 ## Coding Style & Naming Conventions
 - Terraform files must remain `terraform fmt` clean with two-space indentation; module names use hyphenated, functional nouns (e.g., `nat-instance`, `route-failover`).

@@ -77,5 +77,10 @@ This log captures significant repository activities handled by the agent. Timest
 | 2025-10-22 23:20  | Fixed CloudWatch agent installation          | Switched EC2 user data to install the agent via RPM and start the service so NAT/probe logs reach CloudWatch. | ~4 min     |
 | 2025-10-22 23:30  | Added demo health Lambda                     | Implemented health-report Lambda to summarize NAT/probe states, SSM connectivity, and log activity, invoking the log collector for probes. | ~10 min    |
 | 2025-10-23 21:45  | Kept probes online for health checks         | Removed automatic shutdown from probe user data so instances stay running for SSM and demo health verification. | ~2 min     |
+| 2025-10-27 06:58  | Hardened NAT ASG automation                  | Taught the NAT ASG hook to disable source/dest checks, create default routes when missing, and parse the actual Auto Scaling event payload; applied the refreshed Lambda via Terraform. | ~25 min    |
+| 2025-10-27 07:12  | Restored probe SSM connectivity              | Validated automated NAT rotation, rebooted probes to confirm SSM `Online` status, and reran the demo health Lambda to verify end-to-end logging. | ~15 min    |
+| 2025-10-27 07:25  | Cleared Terraform linter noise               | Removed unused locals from `infra/nat_asg_automation.tf` and documented the sandbox plugin limitation so CI tflint runs cleanly. | ~3 min     |
+| 2025-10-27 08:45  | Eliminated NAT hook race on first apply       | Added explicit dependencies so NAT ASGs launch only after the hook/EventBridge resources exist, preventing missed route wiring after destroy/apply. | ~7 min     |
+| 2025-10-27 09:20  | Verified post-apply health checks             | Exercised log collector, demo health Lambda, and ASG instance refresh to confirm SSM, routing, and logging survive fresh deployments. | ~8 min     |
 
 Add new rows as work progresses, noting the command references or pull requests where relevant.

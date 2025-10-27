@@ -15,7 +15,7 @@ output "private_subnet_ids" {
 
 output "nat_instance_ids" {
   description = "NAT instance identifiers keyed by AZ."
-  value       = { for az, instance in aws_instance.nat : az => instance.id }
+  value       = { for az, asg in aws_autoscaling_group.nat : az => try(asg.instances[0].id, null) }
 }
 
 output "nat_eip_addresses" {

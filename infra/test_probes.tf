@@ -127,7 +127,9 @@ resource "aws_instance" "probe" {
     Role = "probe"
   })
 
+  # Ensure NAT ASGs plus their route hook are online before booting probes.
   depends_on = [
-    aws_route.private_default
+    aws_autoscaling_group.nat,
+    aws_lambda_function.nat_asg_hook
   ]
 }
