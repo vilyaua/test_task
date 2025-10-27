@@ -38,6 +38,14 @@ def _associate_eip(eni_id: str, allocation_id: str) -> None:
     )
 
 
+def _disable_source_dest_check(instance_id: str) -> None:
+    """Ensure the NAT instance accepts forwarded traffic."""
+    EC2.modify_instance_attribute(
+        InstanceId=instance_id,
+        SourceDestCheck={"Value": False},
+    )
+
+
 def _replace_route(route_table_id: str, eni_id: str) -> None:
     """Ensure the private route table sends 0.0.0.0/0 traffic through the NAT ENI."""
     try:
@@ -73,6 +81,7 @@ def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     allocation_id = EIP_MAP.get(az, "")
     try:
         eni_id = _describe_primary_eni(instance_id)
+        _disable_source_dest_check(instance_id)
         _associate_eip(eni_id, allocation_id)
         _replace_route(ROUTE_TABLE_MAP[az], eni_id)
     except ClientError as exc:

@@ -44,6 +44,12 @@ data "aws_iam_policy_document" "nat_asg_hook" {
   }
 
   statement {
+    effect    = "Allow"
+    actions   = ["ec2:ModifyInstanceAttribute"]
+    resources = ["arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/*"]
+  }
+
+  statement {
     effect = "Allow"
     actions = [
       "ec2:ReplaceRoute",
