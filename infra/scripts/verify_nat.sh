@@ -33,6 +33,107 @@ append_line() {
   printf '%s\n' "$1" >>"${REPORT_FILE}"
 }
 
+summarize_log_collector() {
+  if [[ "${INVOKE_LAMBDAS}" == "0" ]]; then
+    report_section "Log Collector Summary"
+    append_line "Invocation skipped (INVOKE_LAMBDAS=0)."
+    append_line ""
+    return
+  fi
+
+  if ! command -v jq >/dev/null 2>&1 || [[ ! -s "${LOG_COLLECTOR_FILE}" ]]; then
+    report_section "Log Collector Summary"
+    append_line "No log collector data available."
+    append_line ""
+    return
+  fi
+
+  local generated lookback
+  generated=$(jq -r '.generatedAt // empty' "${LOG_COLLECTOR_FILE}")
+  lookback=$(jq -r '.lookbackMinutes // empty' "${LOG_COLLECTOR_FILE}")
+
+  report_section "Log Collector Summary"
+  [[ -n "${generated}" ]] && append_line "Generated at: ${generated}"
+  [[ -n "${lookback}" ]] && append_line "Lookback window: ${lookback} minutes"
+  append_line ""
+
+  if jq -e '.logGroups | length > 0' "${LOG_COLLECTOR_FILE}" >/dev/null 2>&1; then
+    append_line "Log groups:"
+    jq -r '.logGroups[] |
+      "- \(.logGroup // "<unknown>"): \(.eventCount // 0) events (latest: " +
+      ((.events | if length > 0 then .[-1].timestamp else "n/a" end)) +
+      ", sample stream: " + (.events[0].logStream // "n/a") + ")"' \
+      "${LOG_COLLECTOR_FILE}" >>"${REPORT_FILE}"
+    append_line ""
+  else
+    append_line "No log groups returned."
+    append_line ""
+  fi
+
+  append_line "Full payload saved to ${LOG_COLLECTOR_FILE}."
+  append_line ""
+}
+
+summarize_demo_health() {
+  if [[ "${INVOKE_LAMBDAS}" == "0" ]]; then
+    report_section "Demo Health Summary"
+    append_line "Invocation skipped (INVOKE_LAMBDAS=0)."
+    append_line ""
+    return
+  fi
+
+  if ! command -v jq >/dev/null 2>&1 || [[ ! -s "${DEMO_HEALTH_FILE}" ]]; then
+    report_section "Demo Health Summary"
+    append_line "No demo health data available."
+    append_line ""
+    return
+  fi
+
+  local generated lookback
+  generated=$(jq -r '.generatedAt // empty' "${DEMO_HEALTH_FILE}")
+  lookback=$(jq -r '.lookbackMinutes // empty' "${DEMO_HEALTH_FILE}")
+
+  report_section "Demo Health Summary"
+  [[ -n "${generated}" ]] && append_line "Generated at: ${generated}"
+  [[ -n "${lookback}" ]] && append_line "Health lookback: ${lookback} minutes"
+  append_line ""
+
+  if jq -e '.natInstances | length > 0' "${DEMO_HEALTH_FILE}" >/dev/null 2>&1; then
+    append_line "NAT instances (demo-health view):"
+    jq -r '.natInstances[] |
+      "- \(.instanceId) (\(.availabilityZone // "n/a")): state=\(.state // "n/a"), SSM=\(.ssmPingStatus // "n/a")"' \
+      "${DEMO_HEALTH_FILE}" >>"${REPORT_FILE}"
+    append_line ""
+  fi
+
+  if jq -e '.probeInstances | length > 0' "${DEMO_HEALTH_FILE}" >/dev/null 2>&1; then
+    append_line "Probe instances (demo-health view):"
+    jq -r '.probeInstances[] |
+      "- \(.instanceId) (\(.availabilityZone // "n/a")): state=\(.state // "n/a"), SSM=\(.ssmPingStatus // "n/a")"' \
+      "${DEMO_HEALTH_FILE}" >>"${REPORT_FILE}"
+    append_line ""
+  fi
+
+  if jq -e '.logGroups | length > 0' "${DEMO_HEALTH_FILE}" >/dev/null 2>&1; then
+    append_line "Log groups observed:"
+    jq -r '.logGroups[] |
+      "- \(.logGroup // "<unknown>"): latest event \(.latestEventTime // "n/a")"' \
+      "${DEMO_HEALTH_FILE}" >>"${REPORT_FILE}"
+    append_line ""
+  fi
+
+  if jq -e '.logCollector' "${DEMO_HEALTH_FILE}" >/dev/null 2>&1; then
+    append_line "Embedded log collector (from demo-health):"
+    jq -r '.logCollector |
+      "- Window: \(.lookbackMinutes // 0) minutes, events sampled from \(.logGroups | length) log groups"' \
+      "${DEMO_HEALTH_FILE}" >>"${REPORT_FILE}"
+    append_line ""
+  fi
+
+  append_line "Full payload saved to ${DEMO_HEALTH_FILE}."
+  append_line ""
+}
+
 invoke_lambda() {
   local function_name="$1"
   local payload="$2"
@@ -40,14 +141,13 @@ invoke_lambda() {
   local section_title="$4"
 
   if [[ "${INVOKE_LAMBDAS}" == "0" ]]; then
+    printf '{}' >"${output_file}"
     return
   fi
 
   if ! aws lambda get-function --function-name "${function_name}" --region "${REGION}" >/dev/null 2>&1; then
     log "INFO: Lambda ${function_name} not found; skipping"
     printf '{}' >"${output_file}"
-    report_section "${section_title}"
-    append_line "Lambda ${function_name} not found; skipped."
     return
   fi
 
@@ -60,17 +160,9 @@ invoke_lambda() {
     "${output_file}" \
     >"${tmp_meta}" 2>&1; then
     log "Lambda ${function_name} invoked; output saved to ${output_file}"
-    report_section "${section_title}"
-    if command -v jq >/dev/null 2>&1 && jq . "${output_file}" >/dev/null 2>&1; then
-      report_block "$(jq '.' "${output_file}")"
-    else
-      report_block "$(cat "${output_file}")"
-    fi
   else
     log "WARNING: Lambda ${function_name} invocation failed"
     printf '{}' >"${output_file}"
-    report_section "${section_title}"
-    append_line "Invocation failed. See workflow logs for details."
   fi
   rm -f "${tmp_meta}"
 }
@@ -258,6 +350,9 @@ fi
 
 invoke_lambda "${LOG_COLLECTOR_FUNCTION}" '{"lookback_minutes":30,"max_events":50}' "${LOG_COLLECTOR_FILE}" "Log Collector Lambda Output"
 invoke_lambda "${DEMO_HEALTH_FUNCTION}" '{"lookback_minutes":30}' "${DEMO_HEALTH_FILE}" "Demo Health Lambda Output"
+
+summarize_log_collector
+summarize_demo_health
 
 log "Verification completed"
 log "Report written to ${REPORT_FILE}"

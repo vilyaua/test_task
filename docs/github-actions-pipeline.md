@@ -261,7 +261,9 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 # infra/scripts/verify_nat.sh
 REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
 # Confirms NAT instances are running, private routes target their ENIs,
-# and produces a Markdown summary for demo evidence.
+# invokes log-collector/demo-health Lambdas, and produces Markdown + JSON
+# artifacts for demo evidence (verification-report.md, log-collector-output.json,
+# demo-health-output.json).
 ```
 
 ## 4. Cost Control & Safety Nets

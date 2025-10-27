@@ -72,6 +72,7 @@ REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
 # Also runs the log-collector and demo-health Lambdas and saves their JSON to
 # `log-collector-output.json` / `demo-health-output.json`. Disable by setting
 # `INVOKE_LAMBDAS=0` if you only need the EC2/route checks.
+ls -1 verification-report.md log-collector-output.json demo-health-output.json
 ```
 The script logs to stdout and, when `REPORT_FILE` is set, saves a Markdown summary with NAT/probe inventories, route-table targets, and SSM status checks.
 

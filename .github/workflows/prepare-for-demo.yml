@@ -177,9 +177,33 @@ jobs:
             exit 0
           fi
 
-          aws ssm wait command-executed \
-            --command-id "${command_id}" \
-            --region ${{ vars.AWS_REGION }} || true
+          for attempt in {1..30}; do
+            statuses=$(aws ssm list-command-invocations \
+              --command-id "${command_id}" \
+              --region ${{ vars.AWS_REGION }} \
+              --query 'CommandInvocations[].Status' \
+              --output text 2>/dev/null || true)
+
+            if [[ -z "${statuses}" ]]; then
+              sleep 5
+              continue
+            fi
+
+            incomplete=0
+            for status in ${statuses}; do
+              case "${status}" in
+                Pending|InProgress|Cancelling)
+                  incomplete=1
+                  ;;
+              esac
+            done
+
+            if [[ ${incomplete} -eq 0 ]]; then
+              break
+            fi
+
+            sleep 5
+          done
 
           aws ssm list-command-invocations \
             --command-id "${command_id}" \
