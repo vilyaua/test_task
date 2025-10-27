@@ -70,7 +70,9 @@ def _replace_route(route_table_id: str, eni_id: str) -> None:
 def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     detail = event.get("detail", {})
     instance_id = detail.get("EC2InstanceId")
-    az = detail.get("AvailabilityZone")
+    az = detail.get("AvailabilityZone") or detail.get("Availability Zone")
+    if not az:
+        az = detail.get("Details", {}).get("Availability Zone")
 
     if not instance_id or not az:
         raise ValueError(f"Missing instance ID or AZ in event: {event}")
