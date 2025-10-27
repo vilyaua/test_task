@@ -163,8 +163,8 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 
 * [x] Analyze AWS components suitable for NAT alternative (EC2, ASG, NLB, Route Tables, IAM).
 * [x] Create **multi-AZ design** with fault tolerance.
-* [ ] Document routing logic and failover mechanism.
-* [ ] Draw initial architecture diagram (Mermaid / Draw.io).
+* [x] Document routing logic and failover mechanism.
+* [x] Draw initial architecture diagram (Mermaid / Draw.io).
 
 ### Epic 2 — Infrastructure as Code (IaC)
 
@@ -185,7 +185,7 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 * [x] Add CloudWatch metrics and alarms for instance health.
 * [x] Enable VPC Flow Logs and log rotation.
 * [x] Configure IAM roles and least privilege policies.
-* [ ] Document operational runbook (failover, maintenance).
+* [x] Document operational runbook (failover, maintenance).
 
 ### Epic 5 — Documentation & Review
 
