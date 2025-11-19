@@ -197,7 +197,7 @@ for az, subnet in public_subnets.items():
         desired_capacity=1,
         health_check=autoscaling.HealthCheck.ec2()
     )
-    
+
     Tags.of(asg).add("Name", f"{props.prefix}-nat-{az}")
 ```
 
@@ -540,4 +540,3 @@ For this project, **CDK (Python)** is recommended because:
 4. Better integration with existing Python tooling
 5. CloudFormation state management is simpler
 6. Reusable constructs for future projects
-

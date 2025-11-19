@@ -5,7 +5,6 @@ from typing import Any, Dict
 import boto3
 from botocore.exceptions import ClientError
 
-
 EC2 = boto3.client("ec2")
 
 ROUTE_TABLE_MAP: Dict[str, str] = json.loads(os.environ["ROUTE_TABLE_MAP"])

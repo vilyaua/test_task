@@ -41,8 +41,16 @@ infra/environments/*/        →  cdk/config/{env}_config.py
 npm install -g aws-cdk
 
 # Install Python dependencies (using uv or pip)
+# Option 1: With virtual environment (recommended)
+uv venv
+source .venv/bin/activate
 uv pip install -r requirements.txt
-# Or: pip install -r requirements.txt
+
+# Option 2: System-wide
+uv pip install --system -r requirements.txt
+
+# Or using pip:
+pip install -r requirements.txt
 
 # Bootstrap CDK (one-time per account/region)
 cdk bootstrap aws://197496953931/eu-central-1
@@ -175,4 +183,3 @@ hook_lambda = lambda.Function(
 - [Full Migration Plan](./cdk-migration-plan.md)
 - [AWS CDK Python Docs](https://docs.aws.amazon.com/cdk/api/v2/python/)
 - [CDK Patterns](https://github.com/cdk-patterns/serverless)
-

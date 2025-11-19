@@ -9,8 +9,13 @@ Using `uv` (recommended):
 # Install uv: https://github.com/astral-sh/uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install pre-commit and dependencies
+# Option 1: Create virtual environment (recommended)
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
+
+# Option 2: Install system-wide (use --system flag)
+uv pip install --system -r requirements.txt
 ```
 
 Using `pip`:
@@ -150,4 +155,3 @@ exclude: ^(path/to/exclude|another/path)
 2. **Fix issues immediately:** Don't skip hooks unless absolutely necessary
 3. **Update regularly:** Run `pre-commit autoupdate` periodically
 4. **Team alignment:** Ensure all team members have pre-commit installed
-

@@ -3,15 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment (test or prod)'
+        description: "Environment (test or prod)"
         required: true
-        default: 'test'
+        default: "test"
         type: choice
         options:
           - test
           - prod
       run_demo:
-        description: 'Run demo/verification after deployment (can be skipped)'
+        description: "Run demo/verification after deployment (can be skipped)"
         required: false
         default: false
         type: boolean
@@ -35,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -122,7 +122,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4

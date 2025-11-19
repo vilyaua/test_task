@@ -66,6 +66,7 @@ done
 
 log "NAT instances are running"
 
+# shellcheck disable=SC2016  # AWS CLI query syntax requires single quotes
 route_targets=$(aws ec2 describe-route-tables \
   --region "${REGION}" \
   --filters "Name=tag:Project,Values=${PROJECT}" \

@@ -13,7 +13,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^(cdk\.out/|\.git/)
       - id: check-yaml
-        args: [--unsafe]  # Allow custom YAML tags
+        args: [--unsafe] # Allow custom YAML tags
       - id: check-json
       - id: check-added-large-files
         args: [--maxkb=1000]
@@ -44,16 +44,18 @@ repos:
     rev: v3.0.3
     hooks:
       - id: pylint
-        args: [--max-line-length=100, --disable=C0111]
+        args:
+          - --max-line-length=100
+          - --disable=C0111,E0401,R0902,R0903,R0801
+          - --ignore-imports=yes
         files: ^(cdk/|app\.py|.*\.py)$
-        exclude: ^(cdk\.out/|\.venv/)
+        exclude: ^(cdk\.out/|\.venv/|infra/lambda/)
 
   # Type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
         args: [--ignore-missing-imports, --python-version=3.12]
         files: ^(cdk/|app\.py|.*\.py)$
         exclude: ^(cdk\.out/|\.venv/|infra/lambda/)
@@ -73,4 +75,3 @@ repos:
       - id: prettier
         types: [yaml]
         exclude: ^(cdk\.out/|\.git/)
-

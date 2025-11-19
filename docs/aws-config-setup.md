@@ -84,4 +84,3 @@ aws sts get-caller-identity --profile cdk
 1. Add credentials to `~/.aws/credentials` for the `cdk` profile
 2. Bootstrap CDK: `cdk bootstrap aws://197496953931/eu-central-1`
 3. Deploy infrastructure: `cdk deploy --context environment=test`
-

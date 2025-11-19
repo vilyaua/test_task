@@ -1,4 +1,5 @@
 """Lambda to report demo health (instances, SSM, logs)."""
+
 from __future__ import annotations
 
 import json
@@ -85,7 +86,9 @@ def _log_group_status(names: List[str]) -> List[Dict[str, Any]]:
         except ClientError as exc:  # pylint: disable=duplicate-code
             error_code = exc.response["Error"].get("Code")
             if error_code == "ResourceNotFoundException":
-                status.update({"exists": False, "error": exc.response["Error"].get("Message", str(exc))})
+                status.update(
+                    {"exists": False, "error": exc.response["Error"].get("Message", str(exc))}
+                )
             else:
                 status.update({"error": exc.response["Error"].get("Message", str(exc))})
             summary.append(status)
@@ -99,7 +102,11 @@ def _log_group_status(names: List[str]) -> List[Dict[str, Any]]:
                 "creationTime": stream.get("creationTime"),
             }
             if stream_info["lastEventTimestamp"]:
-                status["latestEventTime"] = _iso(datetime.fromtimestamp(stream_info["lastEventTimestamp"] / 1000, tz=timezone.utc))
+                status["latestEventTime"] = _iso(
+                    datetime.fromtimestamp(
+                        stream_info["lastEventTimestamp"] / 1000, tz=timezone.utc
+                    )
+                )
             status["streams"].append(stream_info)
         summary.append(status)
     return summary
@@ -110,10 +117,12 @@ def _invoke_log_collector(function_name: str) -> Dict[str, Any]:
         response = _lambda.invoke(
             FunctionName=function_name,
             InvocationType="RequestResponse",
-            Payload=json.dumps({
-                "lookback_minutes": LOOKBACK_MINUTES,
-                "max_events": MAX_LOG_EVENTS,
-            }).encode("utf-8"),
+            Payload=json.dumps(
+                {
+                    "lookback_minutes": LOOKBACK_MINUTES,
+                    "max_events": MAX_LOG_EVENTS,
+                }
+            ).encode("utf-8"),
         )
     except (ClientError, BotoCoreError) as exc:
         return {"error": str(exc)}
@@ -131,7 +140,9 @@ def _invoke_log_collector(function_name: str) -> Dict[str, Any]:
 
 def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
     # Allow override via event
-    function_name = event.get("log_collector_function") or os.environ.get("LOG_COLLECTOR_FUNCTION", "")
+    function_name = event.get("log_collector_function") or os.environ.get(
+        "LOG_COLLECTOR_FUNCTION", ""
+    )
     lookback_minutes = int(event.get("lookback_minutes", LOOKBACK_MINUTES))
 
     nat_instances = _describe_instances("nat")

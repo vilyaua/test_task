@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 import boto3
 from botocore.exceptions import ClientError
 
-
 logs_client = boto3.client("logs")
 
 DEFAULT_LOOKBACK_MINUTES = int(os.getenv("LOOKBACK_MINUTES", "15"))
@@ -63,7 +62,9 @@ def handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:
 
     log_groups = event.get("log_groups") or DEFAULT_LOG_GROUPS
     if not log_groups:
-        raise ValueError("No log groups provided via event.log_groups or LOG_GROUPS environment variable.")
+        raise ValueError(
+            "No log groups provided via event.log_groups or LOG_GROUPS environment variable."
+        )
 
     since = datetime.now(timezone.utc) - timedelta(minutes=lookback_minutes)
     start_time_ms = int(since.timestamp() * 1000)

@@ -11,37 +11,37 @@ This project is part of a **technical assessment** focused on architectural reas
 
 ## 🧩 Requirements
 
-1. **Outbound connectivity:**  
+1. **Outbound connectivity:**
    Private subnets must be able to initiate outbound connections to the internet.
-2. **Inbound security:**  
+2. **Inbound security:**
    Prevent unsolicited inbound connections from the internet.
-3. **High availability:**  
+3. **High availability:**
    Fault-tolerant design spanning multiple **Availability Zones**.
-4. **Scalability:**  
+4. **Scalability:**
    Support increasing workloads gracefully.
-5. **Monitoring and alerting:**  
+5. **Monitoring and alerting:**
    Include metrics, logs, and alerts to detect failures or performance issues.
-6. **Security best practices:**  
+6. **Security best practices:**
    Use IAM roles, least privilege, and encrypted communications.
-7. **Cost efficiency and operational simplicity:**  
+7. **Cost efficiency and operational simplicity:**
    Minimize operational overhead without compromising availability.
 
 ---
 
 ## 📦 Deliverables
 
-- **High-level component explanation** (bulleted, concise).  
-- **Optional:**  
-  - Pseudo-code or IaC snippets (e.g., failover automation, routing logic).  
-  - Scripts or GitHub Actions for deployment and validation.  
+- **High-level component explanation** (bulleted, concise).
+- **Optional:**
+  - Pseudo-code or IaC snippets (e.g., failover automation, routing logic).
+  - Scripts or GitHub Actions for deployment and validation.
 
 ---
 
 ## 🧮 Evaluation Criteria
 
-- Clarity of design and ability to communicate trade-offs.  
-- How effectively the system addresses **availability, scalability, and security**.  
-- Creativity in leveraging AWS native services (while **avoiding Managed NAT Gateway**).  
+- Clarity of design and ability to communicate trade-offs.
+- How effectively the system addresses **availability, scalability, and security**.
+- Creativity in leveraging AWS native services (while **avoiding Managed NAT Gateway**).
 - Practicality — how easily it can be implemented and maintained.
 
 ---
@@ -138,9 +138,14 @@ This project is part of a **technical assessment** focused on architectural reas
    ```bash
    # Install uv: https://github.com/astral-sh/uv
    curl -LsSf https://astral.sh/uv/install.sh | sh
-   
-   # Install dependencies
+
+   # Option 1: Create virtual environment (recommended)
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    uv pip install -r requirements.txt
+
+   # Option 2: Install system-wide (use --system flag)
+   uv pip install --system -r requirements.txt
    ```
 
    Or using `pip`:
@@ -153,7 +158,7 @@ This project is part of a **technical assessment** focused on architectural reas
    pre-commit install
    ```
    This ensures code is formatted and validated before commits. See `docs/pre-commit-setup.md` for details.
-   
+
    **Skip hooks if needed:** `git commit --no-verify -m "message"` (use sparingly)
 
 4. **Configure AWS credentials**
@@ -167,7 +172,7 @@ This project is part of a **technical assessment** focused on architectural reas
      --description "KMS key for NAT Gateway Alternative logs" \
      --policy file://infra/policies/kms-flowlogs-policy.json \
      --region eu-central-1
-   
+
    # Create alias (use the KeyId from above)
    aws kms create-alias \
      --alias-name alias/nat-alternative-logs \

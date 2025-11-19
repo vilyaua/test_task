@@ -124,4 +124,3 @@ When updating policies:
 - IAM permissions are scoped to necessary operations only
 - OIDC trust is limited to specific repository and branches
 - KMS key policy restricts log encryption to specific log group patterns
-

@@ -6,7 +6,13 @@ Use this checklist to validate changes before opening a pull request or pushing 
 - Install AWS CDK CLI: `npm install -g aws-cdk`
 - Install Python 3.12+ and package manager (`pip` or `uv`)
 - Install Python dependencies:
-  - Using `uv` (recommended): `uv pip install -r requirements.txt`
+  - Using `uv` (recommended):
+    ```bash
+    uv venv
+    source .venv/bin/activate
+    uv pip install -r requirements.txt
+    # Or system-wide: uv pip install --system -r requirements.txt
+    ```
   - Using `pip`: `pip install -r requirements.txt`
 - Configure AWS credentials via `~/.aws/credentials` or environment variables
 - Ensure you have permissions to create VPC, EC2, Lambda, IAM, CloudFormation resources

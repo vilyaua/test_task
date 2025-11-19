@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """CDK app entry point for NAT Gateway Alternative."""
 import os
+from typing import Union
 
 import aws_cdk as cdk
 
@@ -14,6 +15,7 @@ app = cdk.App()
 env_name = app.node.try_get_context("environment") or os.getenv("CDK_ENVIRONMENT", "test")
 
 # Load configuration based on environment
+config: Union[TestConfig, ProdConfig]
 if env_name == "prod":
     config = ProdConfig()
 else:
@@ -31,8 +33,8 @@ stack = NatAlternativeStack(
 )
 
 # Add tags to all resources
-for key, value in config.tags.items():
-    cdk.Tags.of(stack).add(key, value)
+if config.tags:
+    for key, value in config.tags.items():
+        cdk.Tags.of(stack).add(key, value)
 
 app.synth()
-

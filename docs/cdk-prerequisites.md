@@ -223,4 +223,3 @@ If deploying to an existing stack:
 - No need for state file management
 - OIDC authentication (no static credentials)
 - Bootstrap command handles asset storage setup
-

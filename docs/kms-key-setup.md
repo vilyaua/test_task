@@ -132,4 +132,3 @@ If CDK can't use the key:
 1. Verify the key policy allows CloudWatch Logs service
 2. Check the key policy in `infra/policies/kms-flowlogs-policy.json`
 3. Ensure the account ID in the policy matches your account (197496953931)
-

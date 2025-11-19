@@ -1,19 +1,18 @@
 """Main CDK stack for NAT Gateway Alternative."""
+
 import ipaddress
 import json
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Union
 
 import aws_cdk as cdk
-from aws_cdk import (
-    aws_autoscaling as autoscaling,
-    aws_ec2 as ec2,
-    aws_events as events,
-    aws_events_targets as targets,
-    aws_iam as iam,
-    aws_kms as kms,
-    aws_lambda as lambda_,
-    aws_logs as logs,
-)
+from aws_cdk import aws_autoscaling as autoscaling
+from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_kms as kms
+from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_logs as logs
 from constructs import Construct
 
 from cdk.config.prod_config import ProdConfig
@@ -36,7 +35,7 @@ class NatAlternativeStack(cdk.Stack):
         self,
         scope: Construct,
         construct_id: str,
-        config: TestConfig | ProdConfig,
+        config: Union[TestConfig, ProdConfig],
         **kwargs,
     ) -> None:
         """Initialize the NAT Alternative stack."""
@@ -67,7 +66,9 @@ class NatAlternativeStack(cdk.Stack):
         # Create outputs
         self._create_outputs()
 
-    def _create_network(self) -> tuple[ec2.Vpc, Dict[str, ec2.PublicSubnet], Dict[str, ec2.PrivateSubnet]]:
+    def _create_network(
+        self,
+    ) -> tuple[ec2.Vpc, Dict[str, ec2.PublicSubnet], Dict[str, ec2.PrivateSubnet]]:
         """Create VPC, subnets, and route tables."""
         # Create VPC
         vpc = ec2.Vpc(
@@ -156,7 +157,8 @@ class NatAlternativeStack(cdk.Stack):
             )
         else:
             # Create new KMS key for flow logs
-            # Note: For demo cycles, prefer using an existing key via logs_kms_key_arn or logs_kms_key_alias
+            # Note: For demo cycles, prefer using an existing key via
+            # logs_kms_key_arn or logs_kms_key_alias
             flow_logs_kms = kms.Key(
                 self,
                 "FlowLogsKMS",
@@ -167,7 +169,9 @@ class NatAlternativeStack(cdk.Stack):
 
         # Determine KMS key for app logs
         if self.config.app_logs_kms_key_arn:
-            app_logs_kms = kms.Key.from_key_arn(self, "AppLogsKMS", self.config.app_logs_kms_key_arn)
+            app_logs_kms = kms.Key.from_key_arn(
+                self, "AppLogsKMS", self.config.app_logs_kms_key_arn
+            )
         elif self.config.app_logs_kms_key_alias:
             app_logs_kms = kms.Key.from_lookup(
                 self, "AppLogsKMS", alias_name=self.config.app_logs_kms_key_alias
@@ -177,7 +181,11 @@ class NatAlternativeStack(cdk.Stack):
             app_logs_kms = flow_logs_kms
 
         # Create CloudWatch log groups
-        retention = logs.RetentionDays.THIRTY_DAYS if self.config.flow_log_retention_days >= 30 else logs.RetentionDays.TWO_WEEKS
+        retention = (
+            logs.RetentionDays.THIRTY_DAYS
+            if self.config.flow_log_retention_days >= 30
+            else logs.RetentionDays.TWO_WEEKS
+        )
 
         vpc_flow_log_group = logs.LogGroup(
             self,
@@ -188,7 +196,11 @@ class NatAlternativeStack(cdk.Stack):
         )
         cdk.Tags.of(vpc_flow_log_group).add("Name", f"{self.prefix}-flowlogs")
 
-        app_retention = logs.RetentionDays.TWO_WEEKS if self.config.app_log_retention_days >= 14 else logs.RetentionDays.ONE_WEEK
+        app_retention = (
+            logs.RetentionDays.TWO_WEEKS
+            if self.config.app_log_retention_days >= 14
+            else logs.RetentionDays.ONE_WEEK
+        )
 
         nat_log_group = logs.LogGroup(
             self,
@@ -278,7 +290,9 @@ class NatAlternativeStack(cdk.Stack):
 
         return instance_role
 
-    def _create_nat_instances(self) -> tuple[Dict[str, autoscaling.AutoScalingGroup], Dict[str, ec2.CfnEIP], ec2.SecurityGroup]:
+    def _create_nat_instances(
+        self,
+    ) -> tuple[Dict[str, autoscaling.AutoScalingGroup], Dict[str, ec2.CfnEIP], ec2.SecurityGroup]:
         """Create NAT instances with Auto Scaling Groups."""
         # Create security group for NAT instances
         nat_sg = ec2.SecurityGroup(
@@ -300,12 +314,13 @@ class NatAlternativeStack(cdk.Stack):
             )
 
         # Allow SSH from allowed CIDRs
-        for ssh_cidr in self.config.allowed_ssh_cidrs:
-            nat_sg.add_ingress_rule(
-                ec2.Peer.ipv4(ssh_cidr),
-                ec2.Port.tcp(22),
-                "Admin SSH",
-            )
+        if self.config.allowed_ssh_cidrs:
+            for ssh_cidr in self.config.allowed_ssh_cidrs:
+                nat_sg.add_ingress_rule(
+                    ec2.Peer.ipv4(ssh_cidr),
+                    ec2.Port.tcp(22),
+                    "Admin SSH",
+                )
 
         # Create NAT user data script
         nat_user_data = self._get_nat_user_data()
@@ -315,9 +330,11 @@ class NatAlternativeStack(cdk.Stack):
             self,
             "NATLaunchTemplate",
             machine_image=ec2.MachineImage.latest_amazon_linux2023(),
-            instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.T3, ec2.InstanceSize.SMALL
-            ) if self.config.nat_instance_type == "t3.small" else ec2.InstanceType(self.config.nat_instance_type),
+            instance_type=(
+                ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL)
+                if self.config.nat_instance_type == "t3.small"
+                else ec2.InstanceType(self.config.nat_instance_type)
+            ),
             role=self.instance_role,
             security_group=nat_sg,
             user_data=ec2.UserData.custom(nat_user_data),
@@ -370,7 +387,8 @@ class NatAlternativeStack(cdk.Stack):
     def _get_nat_user_data(self) -> str:
         """Generate NAT instance user data script."""
         # Note: Log group name will be substituted at runtime by Lambda
-        return """#!/usr/bin/env bash
+        return (  # type: ignore[no-any-return]
+            """#!/usr/bin/env bash
 set -euxo pipefail
 
 # Enable IPv4 forwarding persistently
@@ -385,10 +403,16 @@ sysctl -p /etc/sysctl.d/98-nat.conf
 dnf install -y iptables-nft iptables-services
 systemctl enable iptables
 
-curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm
+# Download CloudWatch agent
+curl -fsSL \\
+    https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/\\
+    amazon-cloudwatch-agent.rpm \\
+    -o /tmp/amazon-cloudwatch-agent.rpm
 rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm
 
-CW_LOG_GROUP_NAT=""" + self.nat_log_group_name + """"
+CW_LOG_GROUP_NAT="""
+            + self.nat_log_group_name
+            + """"
 cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CONFIG
 {
   "logs": {
@@ -432,6 +456,7 @@ systemctl enable --now amazon-ssm-agent
 sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
 systemctl restart sshd
 """
+        )
 
     def _create_lambda_functions(self) -> lambda_.Function:
         """Create Lambda functions for NAT automation."""
@@ -458,7 +483,9 @@ systemctl restart sshd
 
         # Add basic execution role
         nat_hook_role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+            iam.ManagedPolicy.from_aws_managed_policy_name(
+                "service-role/AWSLambdaBasicExecutionRole"
+            )
         )
 
         # Add custom permissions
@@ -488,7 +515,6 @@ systemctl restart sshd
         )
 
         # Add EIP association permissions
-        eip_arns = [eip.attr_allocation_id for eip in self.nat_eips.values()]
         nat_hook_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -579,9 +605,11 @@ systemctl restart sshd
                 f"Probe-{az}",
                 vpc=self.vpc,
                 vpc_subnets=ec2.SubnetSelection(subnets=[private_subnet]),
-                instance_type=ec2.InstanceType.of(
-                    ec2.InstanceClass.T3, ec2.InstanceSize.NANO
-                ) if self.config.probe_instance_type == "t3.nano" else ec2.InstanceType(self.config.probe_instance_type),
+                instance_type=(
+                    ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.NANO)
+                    if self.config.probe_instance_type == "t3.nano"
+                    else ec2.InstanceType(self.config.probe_instance_type)
+                ),
                 machine_image=ec2.MachineImage.latest_amazon_linux2023(),
                 security_group=probe_sg,
                 role=self.instance_role,
@@ -607,7 +635,8 @@ systemctl restart sshd
 
     def _get_probe_user_data(self) -> str:
         """Generate probe instance user data script."""
-        return """#!/usr/bin/env bash
+        return (  # type: ignore[no-any-return]
+            """#!/usr/bin/env bash
 set -euo pipefail
 
 LOG_FILE="/var/log/nat-probe.log"
@@ -620,10 +649,16 @@ systemctl enable --now amazon-ssm-agent
 
 # Install minimal tooling for outbound checks (curl ships via curl-minimal)
 dnf install -y bind-utils traceroute >/dev/null
-curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm
+# Download CloudWatch agent
+curl -fsSL \\
+    https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/\\
+    amazon-cloudwatch-agent.rpm \\
+    -o /tmp/amazon-cloudwatch-agent.rpm
 rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm >/dev/null
 
-CW_LOG_GROUP_PROBE=""" + self.probe_log_group_name + """"
+CW_LOG_GROUP_PROBE="""
+            + self.probe_log_group_name
+            + """"
 cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CONFIG
 {
   "logs": {
@@ -678,6 +713,7 @@ while true; do
   sleep 5
 done
 """
+        )
 
     def _create_outputs(self) -> None:
         """Create CloudFormation outputs."""
@@ -713,4 +749,3 @@ done
                 description=f"Elastic IP for NAT instance in {az}",
                 value=eip.attr_public_ip,
             )
-

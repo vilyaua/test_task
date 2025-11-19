@@ -679,8 +679,7 @@ cdk deploy "NatAlternative${ENV^}" --require-approval never
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2025-01-XX  
-**Author:** Migration Planning Team  
+**Document Version:** 1.0
+**Last Updated:** 2025-01-XX
+**Author:** Migration Planning Team
 **Status:** Draft - Pending Review
-

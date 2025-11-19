@@ -151,7 +151,7 @@ gh workflow run "Deploy and Destroy Infrastructure" \
 
 ### Typical Costs Per Run
 
-- **EC2 Instances**: 
+- **EC2 Instances**:
   - NAT instances (t3.small): ~$0.02/hour × 2-3 instances × ~0.2 hours = ~$0.01-0.02
   - Probe instances (t3.nano): ~$0.005/hour × 2-3 instances × ~0.2 hours = ~$0.002-0.003
 - **Data Transfer**: Minimal (outbound only, small amounts)
@@ -252,4 +252,3 @@ Ensure backend configuration files exist:
 - 🔄 Consider adding notifications (Slack, email) on completion
 - 🔄 Consider adding cost tracking/reporting
 - 🔄 Consider adding scheduled runs for validation
-
