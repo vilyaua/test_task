@@ -8,7 +8,8 @@ locals {
 
     echo "$(date --iso-8601=seconds) [INFO] Starting NAT connectivity probe"
 
-    # Ensure the SSM agent is available for log collection
+    # Ensure the SSM agent is installed and running for log collection
+    dnf install -y amazon-ssm-agent >/dev/null
     systemctl enable --now amazon-ssm-agent
 
     # Install minimal tooling for outbound checks (curl ships via curl-minimal)

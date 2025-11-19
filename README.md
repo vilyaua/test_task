@@ -124,9 +124,9 @@ This project is part of a **technical assessment** focused on architectural reas
    ```
 5. **Validate deployment**
    ```bash
-  AWS_PROFILE=terraform-role REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
-  # Outputs verification-report.md, log-collector-output.json, demo-health-output.json
-  ```
+   AWS_PROFILE=terraform-role REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
+   # Outputs verification-report.md, log-collector-output.json, demo-health-output.json
+   ```
 
 Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
 `environments/prod/vars.tfvars` is already configured for three Availability Zones (`az_count = 3`) to meet HA requirements.
@@ -238,7 +238,5 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 **Author:** Vitalii Perminov
 **Date:** October 2025
 **Location:** Vélez-Málaga, Spain
-
-```
 
 ---
