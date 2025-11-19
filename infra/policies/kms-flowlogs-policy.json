@@ -5,7 +5,7 @@
       "Sid": "EnableRootAccountAccess",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::165820787764:root"
+        "AWS": "arn:aws:iam::197496953931:root"
       },
       "Action": "kms:*",
       "Resource": "*"
@@ -27,12 +27,12 @@
       "Condition": {
         "StringLike": {
           "kms:EncryptionContext:aws:logs:arn": [
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/vpc/nat-alternative-*",
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/nat/nat-alternative-*/nat",
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/nat/nat-alternative-*/probe",
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-log-collector",
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-demo-health",
-            "arn:aws:logs:eu-central-1:165820787764:log-group:/aws/lambda/nat-alternative-*-nat-asg-hook"
+            "arn:aws:logs:eu-central-1:197496953931:log-group:/aws/vpc/nat-alternative-*",
+            "arn:aws:logs:eu-central-1:197496953931:log-group:/nat/nat-alternative-*/nat",
+            "arn:aws:logs:eu-central-1:197496953931:log-group:/nat/nat-alternative-*/probe",
+            "arn:aws:logs:eu-central-1:197496953931:log-group:/aws/lambda/nat-alternative-*-log-collector",
+            "arn:aws:logs:eu-central-1:197496953931:log-group:/aws/lambda/nat-alternative-*-demo-health",
+            "arn:aws:logs:eu-central-1:197496953931:log-group:/aws/lambda/nat-alternative-*-nat-asg-hook"
           ]
         }
       }

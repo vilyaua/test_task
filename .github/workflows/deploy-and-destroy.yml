@@ -1,0 +1,146 @@
+name: CDK Deployment and Destroy
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (test or prod)'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - prod
+      run_demo:
+        description: 'Run demo/verification after deployment (can be skipped)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      CDK_ENVIRONMENT: ${{ github.event.inputs.environment }}
+      CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      CDK_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install CDK CLI
+        run: npm install -g aws-cdk@latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: CDK Bootstrap (if needed)
+        run: |
+          cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ vars.AWS_REGION }} || echo "Bootstrap may already exist"
+        continue-on-error: true
+
+      - name: CDK Synth
+        run: cdk synth --context environment=${{ github.event.inputs.environment }}
+
+      - name: CDK Deploy
+        run: cdk deploy --require-approval never --context environment=${{ github.event.inputs.environment }}
+
+  demo:
+    name: Run Demo/Verification
+    needs: deploy
+    if: github.event.inputs.run_demo == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      CDK_ENVIRONMENT: ${{ github.event.inputs.environment }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Run verification script
+        working-directory: infra
+        run: ./scripts/verify_nat.sh ${{ github.event.inputs.environment }}
+
+      - name: Collect probe logs
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets Key=tag:Project,Values=nat-alternative Key=tag:Environment,Values=${{ github.event.inputs.environment }} Key=tag:Role,Values=probe \
+            --parameters commands='sudo journalctl -u cloud-init --no-pager | tail -n 200' \
+            --region ${{ vars.AWS_REGION }} \
+            --comment "Collect probe user-data logs" \
+            --output text
+        continue-on-error: true
+
+  destroy:
+    name: Destroy Infrastructure
+    needs: [deploy, demo]
+    if: always() && (needs.deploy.result == 'success' || needs.deploy.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      CDK_ENVIRONMENT: ${{ github.event.inputs.environment }}
+      CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+      CDK_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install CDK CLI
+        run: npm install -g aws-cdk@latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Destroy infrastructure
+        run: cdk destroy --force --context environment=${{ github.event.inputs.environment }}
+        continue-on-error: true
+
+      - name: Verify destruction
+        run: |
+          echo "Checking if stack was destroyed..."
+          aws cloudformation describe-stacks --stack-name NatAlternative${{ github.event.inputs.environment }} 2>&1 | grep -q "does not exist" && echo "Stack destroyed successfully" || echo "Stack may still exist"
+        continue-on-error: true

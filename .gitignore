@@ -1,42 +1,36 @@
-# Terraform local state & caches
-.terraform/
-terraform.tfstate
-terraform.tfstate.*
-*.tfstate.backup
-crash.log
-crash.*.log
-override.tf
-override.tf.json
-*.tfvars
-*.tfvars.json
-!.terraform.lock.hcl
-!infra/environments/test/vars.tfvars
-
-# Terraform tooling artifacts
-terraform.rc
-.terraformrc
-terraform.tfplan
-*.tfplan
-
-# Python / virtual environments (for Lambda helpers)
+# CDK
+cdk.out/
+cdk.context.json
+*.pyc
 __pycache__/
 *.py[cod]
-*.egg-info/
-.venv/
+*$py.class
+*.so
+.Python
+env/
 venv/
+ENV/
+.venv
 
-# OS and editor cruft
-.DS_Store
-Thumbs.db
+# IDE
+.vscode/
+.idea/
 *.swp
 *.swo
-.*.sw?
-.idea/
-.vscode/
+*~
 
-# Generated documentation assets
-#docs/*.png
-docs/*.svg
+# OS
+.DS_Store
+Thumbs.db
 
-# Terraform Lambda build artifacts
-infra/lambda/**/*.zip
+# Lambda zip files (generated)
+*.zip
+
+# Terraform (legacy)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Logs
+*.log

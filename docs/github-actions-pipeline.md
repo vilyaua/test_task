@@ -14,7 +14,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   If the provider already exists, AWS returns `EntityAlreadyExists`.
 
-- **OIDC trust:** Create (or update) an IAM role (e.g., `github-actions-terraform`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/test_task:ref:refs/heads/main`).
+- **OIDC trust:** Create (or update) an IAM role (e.g., `github-actions-cdk`) that allows `sts:AssumeRoleWithWebIdentity` from `token.actions.githubusercontent.com` with conditions on your repository and branch (`repo:vilyaua/test_task:ref:refs/heads/main`).
 
   ```json
   {
@@ -23,7 +23,7 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
       {
         "Effect": "Allow",
         "Principal": {
-          "Federated": "arn:aws:iam::165820787764:oidc-provider/token.actions.githubusercontent.com"
+          "Federated": "arn:aws:iam::197496953931:oidc-provider/token.actions.githubusercontent.com"
         },
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
@@ -48,16 +48,16 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   ```bash
   aws iam create-role \
-    --role-name github-actions-terraform \
+    --role-name github-actions-cdk \
     --assume-role-policy-document file://infra/policies/github-actions-trust.json \
-    --description "GitHub Actions OIDC role for Terraform" || true
+    --description "GitHub Actions OIDC role for CDK deployments" || true
 
   aws iam update-assume-role-policy \
-    --role-name github-actions-terraform \
-    --policy-document file://infra/policies/github-actions-trust.json
+    --role-name github-actions-cdk \
+    --assume-role-policy-document file://infra/policies/github-actions-trust.json
   ```
 
-- **Permissions:** Attach a policy that covers Terraform operations (VPC, EC2, ELB/NLB, Auto Scaling, Lambda, CloudWatch, SSM, IAM PassRole). Reuse or extend the deployment role from `docs/terraform-role-setup.md`.
+- **Permissions:** Attach a policy that covers CDK/CloudFormation operations (CloudFormation stack management, VPC, EC2, ELB/NLB, Auto Scaling, Lambda, CloudWatch, SSM, IAM PassRole). See `infra/policies/README.md` for setup instructions.
 
   ```json
   {
@@ -95,16 +95,17 @@ This guide outlines the GitHub Actions setup for validating, deploying, testing,
 
   ```bash
   aws iam put-role-policy \
-    --role-name github-actions-terraform \
-    --policy-name GitHubActionsTerraformAccess \
+    --role-name github-actions-cdk \
+    --policy-name GitHubActionsCDKDeployment \
     --policy-document file://infra/policies/github-actions-policy.json
   ```
 
-- **GitHub variables:** Store the role ARN and default region as repository-level variables (`AWS_ROLE_TO_ASSUME`, `AWS_REGION`).
+- **GitHub variables:** Store the role ARN, default region, and account ID as repository-level variables (`AWS_ROLE_TO_ASSUME`, `AWS_REGION`) and secret (`AWS_ACCOUNT_ID`).
 
   ```bash
-  gh variable set AWS_ROLE_TO_ASSUME --body "arn:aws:iam::165820787764:role/github-actions-terraform"
+  gh variable set AWS_ROLE_TO_ASSUME --body "arn:aws:iam::197496953931:role/github-actions-cdk"
   gh variable set AWS_REGION --body "eu-central-1"
+  gh secret set AWS_ACCOUNT_ID --body "197496953931"
   ```
 
 ## 2. Workflow

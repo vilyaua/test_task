@@ -102,29 +102,32 @@ for eni in ${route_targets}; do
   rm -f /tmp/nat-instance-id
 done
 
-probe_json=$(terraform output -json probe_instance_ids 2>/dev/null || echo '{}')
-if [[ $(echo "${probe_json}" | jq 'length') -gt 0 ]]; then
-  probe_ids=()
-  while IFS= read -r line; do
-    [[ -n "${line}" ]] && probe_ids+=("${line}")
-  done < <(echo "${probe_json}" | jq -r '.[]')
+# Get probe instances via tags (works with both Terraform and CDK)
+probe_ids=$(aws ec2 describe-instances \
+  --region "${REGION}" \
+  --filters "Name=tag:Project,Values=${PROJECT}" \
+            "Name=tag:Environment,Values=${ENVIRONMENT}" \
+            "Name=tag:Role,Values=probe" \
+  --query 'Reservations[].Instances[].InstanceId' \
+  --output text 2>/dev/null || echo "")
 
-  if [[ ${#probe_ids[@]} -eq 0 ]]; then
-    log "No probe instances reported by Terraform output; skipping probe checks"
-  else
-    log "Checking probe instance states: ${probe_ids[*]}"
-    probe_state_output=$(aws ec2 describe-instances \
-      --region "${REGION}" \
-      --instance-ids "${probe_ids[@]}" \
-      --query 'Reservations[].Instances[].{Id:InstanceId,State:State.Name}' \
-      --output json)
+if [[ -z "${probe_ids}" ]]; then
+  log "No probe instances found; skipping probe checks"
+else
+  # shellcheck disable=SC2206
+  probe_id_array=(${probe_ids})
+  log "Checking probe instance states: ${probe_id_array[*]}"
+  probe_state_output=$(aws ec2 describe-instances \
+    --region "${REGION}" \
+    --instance-ids "${probe_id_array[@]}" \
+    --query 'Reservations[].Instances[].{Id:InstanceId,State:State.Name}' \
+    --output json)
 
-    for row in $(echo "$probe_state_output" | jq -c '.[]'); do
-      id=$(echo "$row" | jq -r '.Id')
-      state=$(echo "$row" | jq -r '.State')
-      log "Probe instance ${id} is ${state}"
-    done
-  fi
+  for row in $(echo "$probe_state_output" | jq -c '.[]'); do
+    id=$(echo "$row" | jq -r '.Id')
+    state=$(echo "$row" | jq -r '.State')
+    log "Probe instance ${id} is ${state}"
+  done
 fi
 
 log "Verification completed"

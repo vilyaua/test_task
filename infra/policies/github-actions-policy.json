@@ -4,6 +4,7 @@
     {
       "Effect": "Allow",
       "Action": [
+        "cloudformation:*",
         "ec2:*",
         "elasticloadbalancing:*",
         "autoscaling:*",
@@ -35,14 +36,31 @@
         "iam:DeleteInstanceProfile",
         "iam:AddRoleToInstanceProfile",
         "iam:RemoveRoleFromInstanceProfile",
-        "iam:GetInstanceProfile"
+        "iam:GetInstanceProfile",
+        "iam:TagRole",
+        "iam:PutRolePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:ListInstanceProfilesForRole",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
       ],
       "Resource": "*"
     },
     {
       "Effect": "Allow",
-      "Action": "sts:AssumeRole",
-      "Resource": "arn:aws:iam::165820787764:role/nat-alternative-terraform"
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": [
+            "elasticloadbalancing.amazonaws.com",
+            "autoscaling.amazonaws.com"
+          ]
+        }
+      }
     }
   ]
 }

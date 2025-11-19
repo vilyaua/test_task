@@ -30,7 +30,6 @@ This project is part of a **technical assessment** focused on architectural reas
 
 ## 📦 Deliverables
 
-- **Architecture diagram** illustrating all components and network flow.  
 - **High-level component explanation** (bulleted, concise).  
 - **Optional:**  
   - Pseudo-code or IaC snippets (e.g., failover automation, routing logic).  
@@ -47,42 +46,33 @@ This project is part of a **technical assessment** focused on architectural reas
 
 ---
 
-## 🗺️ Architecture Diagram
-
-![NAT Alternative Architecture](docs/architecture.png)
-
-> Generated with `python docs/architecture.py` using mingrammer’s Diagrams library. Re-run the script after topology changes to refresh the PNG.
-
 ## 🧮 Project Structure
 
 ```bash
 .
 ├── README.md
+├── app.py                           # CDK app entry point
+├── cdk.json                         # CDK configuration
+├── requirements.txt                 # Python dependencies
 ├── docs/
-│   ├── architecture.py              # mingrammer Diagrams source
-│   ├── architecture.png             # rendered topology
 │   ├── design-notes.md
-│   ├── github-actions-pipeline.md
-│   └── architecture-diagram.mmd     # legacy Mermaid draft (optional)
+│   └── deploy-and-destroy-workflow.md
+├── cdk/
+│   ├── app.py                       # CDK app entry point
+│   ├── config/
+│   │   ├── test_config.py           # Test environment config
+│   │   └── prod_config.py           # Production environment config
+│   └── infra/
+│       └── nat_stack.py             # Main CDK stack
 ├── infra/
-│   ├── backend.tf
-│   ├── backend-test.hcl
-│   ├── backend-prod.hcl
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── scripts/
-│   │   └── verify_nat.sh
-│   └── infra/policies/
-│       ├── terraform-role-trust.json
-│       ├── nat-alternative-terraform-policy.json
-│       ├── terraform-user-policy.json
-│       ├── terraform-state-policy.json
-│       ├── kms-flowlogs-policy.json
-│       ├── github-actions-trust.json
-│       └── github-actions-policy.json
+│   ├── lambda/                      # Lambda function source code
+│   │   ├── nat_asg_hook/
+│   │   ├── log_collector/
+│   │   └── demo_health/
+│   └── scripts/
+│       └── verify_nat.sh            # Deployment verification script
 └── .github/workflows/
-    └── prepare-for-demo.yml         # validation + optional demo pipeline
+    └── deploy-and-destroy.yml        # CDK deploy/destroy workflow
 ```
 
 ## 🔀 Branching & Release Flow
@@ -90,69 +80,135 @@ This project is part of a **technical assessment** focused on architectural reas
 - `development` is the day-to-day integration branch; small fixes can be pushed directly, larger efforts land via `feature/*` pull requests.
 - `main` remains the production source of truth. Protect it so only reviewed PRs from `development` can merge, and require your approval before release.
 - Feature branches are created from `development`, reviewed with focused PRs, and squashed back into `development`.
-- Promote to production by raising a PR from `development` to `main`, then running Terraform apply from `main` after approval.
+- Promote to production by raising a PR from `development` to `main`, then running CDK deploy from `main` after approval.
 
 ## 🚀 Quick Start (manual execution)
-> Shortcut: `./infra/scripts/bootstrap.sh --profile terraform-role --env test` will reapply policies (unless `--skip-iam`) and run Terraform plan/apply with the correct backend/var files.
 
+### Prerequisites
 
-1. **Configure AWS profiles**
-   - Add the `terraform` IAM user and your admin keys to `~/.aws/credentials`.
-   - Add the assume-role profile to `~/.aws/config`:
-     ```ini
-     [profile terraform-role]
-     role_arn = arn:aws:iam::165820787764:role/nat-alternative-terraform
-     source_profile = terraform
-     external_id = terraform-nat-build
-     region = eu-central-1
-     ```
-2. **Seed IAM/KMS/S3/DynamoDB (one-time per account)**
-   - Review `infra/policies/*.json`, adjust ARNs if needed, then run the commands in `docs/terraform-role-setup.md`.
-3. **Bootstrap Terraform remote state**
+#### One-Time Setup (Per AWS Account/Region)
+
+1. **Bootstrap CDK** (creates S3 bucket for assets and IAM roles for CloudFormation)
+   ```bash
+   cdk bootstrap aws://197496953931/eu-central-1
+   ```
+   This automatically creates:
+   - S3 bucket for CDK assets (templates, Lambda code)
+   - IAM roles for CloudFormation operations
+   - ECR repositories (if using Docker assets)
+
+2. **Create GitHub Actions IAM Role** (for CI/CD)
+   ```bash
+   # Create OIDC provider (one-time per AWS account)
+   aws iam create-open-id-connect-provider \
+     --url https://token.actions.githubusercontent.com \
+     --client-id-list sts.amazonaws.com \
+     --thumbprint-list cf23df2207d99a74fbe169e3eba035e633b65d94
+
+   # Create IAM role
+   aws iam create-role \
+     --role-name github-actions-cdk \
+     --assume-role-policy-document file://infra/policies/github-actions-trust.json \
+     --description "GitHub Actions OIDC role for CDK deployments"
+
+   # Attach deployment policy
+   aws iam put-role-policy \
+     --role-name github-actions-cdk \
+     --policy-name GitHubActionsCDKDeployment \
+     --policy-document file://infra/policies/github-actions-policy.json
+   ```
+
+3. **Configure GitHub Variables**
+   ```bash
+   gh variable set AWS_ROLE_TO_ASSUME --body "arn:aws:iam::197496953931:role/github-actions-cdk"
+   gh variable set AWS_REGION --body "eu-central-1"
+   gh secret set AWS_ACCOUNT_ID --body "197496953931"
+   ```
+
+#### Local Development Setup
+
+1. **Install CDK CLI**
+   ```bash
+   npm install -g aws-cdk
+   ```
+
+2. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure AWS credentials**
+   - Set up AWS credentials via `~/.aws/credentials` or environment variables
+   - Ensure you have permissions to create VPC, EC2, Lambda, IAM, CloudFormation resources
+
+4. **Create KMS Key (Recommended for Demos)**
+   ```bash
+   # Create persistent KMS key (one-time, reuse across deployments)
+   aws kms create-key \
+     --description "KMS key for NAT Gateway Alternative logs" \
+     --policy file://infra/policies/kms-flowlogs-policy.json \
+     --region eu-central-1
+   
+   # Create alias (use the KeyId from above)
+   aws kms create-alias \
+     --alias-name alias/nat-alternative-logs \
+     --target-key-id <KEY_ID> \
+     --region eu-central-1
+   ```
+   The config files already reference `alias/nat-alternative-logs` by default. This key will be reused across all deployments, avoiding creation/destruction costs during demo cycles.
+
+**See `docs/cdk-prerequisites.md` and `docs/kms-key-setup.md` for detailed setup instructions.**
+
+### Deploy Infrastructure
+
+1. **Synthesize CloudFormation template**
+   ```bash
+   cdk synth --context environment=test
+   ```
+
+2. **Deploy to test environment**
+   ```bash
+   cdk deploy --context environment=test
+   ```
+
+3. **Deploy to production environment**
+   ```bash
+   cdk deploy --context environment=prod
+   ```
+
+4. **Validate deployment**
    ```bash
    cd infra
-   AWS_PROFILE=terraform-role terraform init -migrate-state \
-     -backend-config=backend-test.hcl
-   ```
-4. **Plan / Apply**
-   ```bash
-   AWS_PROFILE=terraform-role terraform plan \
-     -var-file=environments/test/vars.tfvars
-
-   AWS_PROFILE=terraform-role terraform apply \
-     -var-file=environments/test/vars.tfvars
-   ```
-5. **Validate deployment**
-   ```bash
-   AWS_PROFILE=terraform-role ./scripts/verify_nat.sh test
+   ./scripts/verify_nat.sh test
    ```
 
-Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
-`environments/prod/vars.tfvars` is already configured for three Availability Zones (`az_count = 3`) to meet HA requirements.
-Each environment now uses a distinct CIDR block (`10.0.0.0/16` for test, `10.1.0.0/16` for prod); adjust these if they overlap with existing VPCs in your accounts.
+### Destroy Infrastructure
+
+```bash
+cdk destroy --context environment=test
+```
+
+**Note:** Test environment uses 2 Availability Zones with CIDR `10.0.0.0/16`. Production uses 3 Availability Zones with CIDR `10.1.0.0/16`. Adjust these in `cdk/config/test_config.py` and `cdk/config/prod_config.py` if they overlap with existing VPCs.
 
 ## 🎬 Demo & Automation Roadmap
 
-- **Terraform-first demo** – use Terraform to deploy the full stack in a sandbox account, then run `verify_nat.sh` to confirm NAT health and routing.
-- **GitHub Actions demo button** – trigger the `Prepare for Demo` workflow, choose the target environment, and approve the `demo-*`/`teardown-*` environments to deploy, verify, and optionally destroy the stack automatically.
-- **Traffic probes** – extend probe user-data or SSM automation to generate curl/iperf traffic, publish latency/packet-loss metrics, and store traces for demo dashboards.
-- **Lambdas & maintenance** – implement automation functions (see *Planned Lambda Automations* below) to keep routing healthy, detect drift, and orchestrate probes.
+- **CDK deployment demo** – use CDK to deploy the full stack in a sandbox account, then run `verify_nat.sh` to confirm NAT health and routing.
+- **GitHub Actions workflow** – trigger the `Deploy and Destroy Infrastructure` workflow, choose the target environment, and optionally run demo verification. Resources are automatically destroyed at the end to save costs.
+- **Traffic probes** – probe instances automatically validate NAT connectivity on startup and report to CloudWatch Logs.
+- **Lambda automation** – NAT ASG hook Lambda automatically configures routes and EIPs when instances launch (see *Planned Lambda Automations* below).
 - **Suggested demo flow**
-  1. `terraform apply` in a clean account.
-  2. Run `verify_nat.sh`, show CloudWatch metrics/flow logs.
-  3. Trigger synthetic traffic via probes; present dashboards/alerts.
-  4. Manually stop a NAT instance and demonstrate Lambda-driven failover once implemented.
-  5. (Optional) Kick off the full CI + demo flow from the CLI:
+  1. `cdk deploy --context environment=test` in a clean account.
+  2. Run `verify_nat.sh test`, show CloudWatch metrics/flow logs.
+  3. Check probe logs in CloudWatch Logs for connectivity validation.
+  4. Manually stop a NAT instance and observe ASG replacement with Lambda-driven route configuration.
+  5. (Optional) Use GitHub Actions workflow for automated deploy/demo/destroy:
      ```bash
-     gh workflow run "Prepare for Demo" \
-       --ref main \
-       --field run_demo=true \
+     gh workflow run "Deploy and Destroy Infrastructure" \
        --field environment=test \
-       --field auto_destroy=true
+       --field run_demo=true
      ```
-     Approve `demo-test` and `teardown-test` when prompted in the Actions UI.
 
-See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda roadmap.
+See `docs/design-notes.md` for the extended automation backlog and Lambda roadmap.
 
 
 ---
@@ -164,14 +220,13 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 * [x] Analyze AWS components suitable for NAT alternative (EC2, ASG, NLB, Route Tables, IAM).
 * [x] Create **multi-AZ design** with fault tolerance.
 * [x] Document routing logic and failover mechanism.
-* [x] Draw initial architecture diagram (Mermaid / Draw.io).
 
 ### Epic 2 — Infrastructure as Code (IaC)
 
-* [x] Implement Terraform or Pulumi stack.
+* [x] Implement AWS CDK (Python) stack.
 * [x] Create parameterized **test** and **prod** environments.
-* [x] Automate EC2 image creation (Packer optional).
-* [x] Integrate health checks and dynamic routes.
+* [x] Automate EC2 image creation (using latest Amazon Linux 2023).
+* [x] Integrate health checks and dynamic routes via Lambda automation.
 
 ### Epic 3 — CI/CD Pipeline
 
@@ -196,13 +251,13 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 
 ---
 
-## ⚙️ CI/CD Workflow
+## ⚙️ CI/CD Workflows
 
-- **Prepare for Demo (`.github/workflows/prepare-for-demo.yml`)**
-  - Runs fmt, tflint, tfsec, and `terraform plan` on every push/PR that touches infra or docs.
-  - When launched manually, pauses for `demo-*` and `teardown-*` environment approvals before applying or destroying demo stacks.
-  - Captures plan artifacts and runs `infra/scripts/verify_nat.sh` plus probe log collection so reviewers have evidence of the deployment.
-- See `docs/github-actions-pipeline.md` for the full YAML snippet and environment setup guidance.
+- **Deploy and Destroy (`.github/workflows/deploy-and-destroy.yml`)** ⭐ **Recommended**
+  - Simple workflow that deploys infrastructure using CDK, optionally runs demo/verification, and **always destroys resources** to save costs.
+  - Perfect for quick validation and testing without leaving resources running.
+  - Can be triggered manually with environment selection (`test` or `prod`) and optional demo step.
+  - See `docs/deploy-and-destroy-workflow.md` for detailed usage instructions.
 
 ## 🧪 Planned Lambda Automations
 
@@ -215,7 +270,7 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 
 | Day | Focus                        | Deliverables                            |
 | --- | ---------------------------- | --------------------------------------- |
-| 1–2 | Architecture & Documentation | Diagram, component design, trade-offs   |
+| 1–2 | Architecture & Documentation | Component design, trade-offs   |
 | 3–4 | IaC Implementation           | Terraform/Pulumi stack with scripts     |
 | 5   | CI/CD Setup                  | Prepare for Demo GitHub Actions workflow |
 | 6   | Testing & Review             | Validation, cost analysis, final README |
