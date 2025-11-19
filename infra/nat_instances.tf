@@ -11,8 +11,8 @@ locals {
     EOT
     sysctl -p /etc/sysctl.d/98-nat.conf
 
-    # Install iptables tooling; AL2023 already ships with curl
-    dnf install -y iptables-nft iptables-services
+    # Install iptables tooling plus the SSM agent (not shipped by default on AL2023)
+    dnf install -y iptables-nft iptables-services amazon-ssm-agent
     systemctl enable iptables
 
     curl -fsSL https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm -o /tmp/amazon-cloudwatch-agent.rpm

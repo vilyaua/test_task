@@ -124,7 +124,8 @@ This project is part of a **technical assessment** focused on architectural reas
    ```
 5. **Validate deployment**
    ```bash
-   AWS_PROFILE=terraform-role ./scripts/verify_nat.sh test
+   AWS_PROFILE=terraform-role REPORT_FILE=verification-report.md ./scripts/verify_nat.sh test
+   # Outputs verification-report.md, log-collector-output.json, demo-health-output.json
    ```
 
 Swap in the production backend (`backend-prod.hcl`) and var file when promoting.
@@ -133,13 +134,13 @@ Each environment now uses a distinct CIDR block (`10.0.0.0/16` for test, `10.1.0
 
 ## 🎬 Demo & Automation Roadmap
 
-- **Terraform-first demo** – use Terraform to deploy the full stack in a sandbox account, then run `verify_nat.sh` to confirm NAT health and routing.
+- **Terraform-first demo** – use Terraform to deploy the full stack in a sandbox account, then run `verify_nat.sh` (optionally with `REPORT_FILE=...`) to confirm NAT health, invoke the observability Lambdas, and capture artifacts (Markdown + JSON).
 - **GitHub Actions demo button** – trigger the `Prepare for Demo` workflow, choose the target environment, and approve the `demo-*`/`teardown-*` environments to deploy, verify, and optionally destroy the stack automatically.
 - **Traffic probes** – extend probe user-data or SSM automation to generate curl/iperf traffic, publish latency/packet-loss metrics, and store traces for demo dashboards.
 - **Lambdas & maintenance** – implement automation functions (see *Planned Lambda Automations* below) to keep routing healthy, detect drift, and orchestrate probes.
 - **Suggested demo flow**
   1. `terraform apply` in a clean account.
-  2. Run `verify_nat.sh`, show CloudWatch metrics/flow logs.
+ 2. Run `verify_nat.sh` (artifact saved if `REPORT_FILE` set; Lambda JSONs saved alongside), show CloudWatch metrics/flow logs.
   3. Trigger synthetic traffic via probes; present dashboards/alerts.
   4. Manually stop a NAT instance and demonstrate Lambda-driven failover once implemented.
   5. (Optional) Kick off the full CI + demo flow from the CLI:
@@ -237,7 +238,5 @@ See `docs/design-notes.md` (§12) for the extended automation backlog and Lambda
 **Author:** Vitalii Perminov
 **Date:** October 2025
 **Location:** Vélez-Málaga, Spain
-
-```
 
 ---

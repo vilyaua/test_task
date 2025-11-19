@@ -55,7 +55,7 @@ Here’s a Git flow that keeps things simple, reproducible, and safe for Terrafo
   - Keep commits atomic and descriptive; squash-merge PRs if you prefer a clean history.
   - Handle hotfixes off main in the same short-lived-branch manner—don’t commit directly.
   - Document manual steps in docs/local-development.md so the process stays repeatable.
-  - Use the verify_nat.sh script (and soon the Lambdas) to capture proof the deployment works during demos.
+  - Use the `verify_nat.sh` script (with `REPORT_FILE` set) and the Lambda suites to capture proof the deployment works during demos; the CI workflow uploads these artifacts automatically.
 
   Following this flow, every change is reviewed, validated by CI, demoed when needed, and merged into a single source of truth before production apply.
 
