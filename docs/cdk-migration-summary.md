@@ -40,8 +40,9 @@ infra/environments/*/        →  cdk/config/{env}_config.py
 # Install CDK CLI
 npm install -g aws-cdk
 
-# Install Python dependencies
-pip install -r requirements.txt
+# Install Python dependencies (using uv or pip)
+uv pip install -r requirements.txt
+# Or: pip install -r requirements.txt
 
 # Bootstrap CDK (one-time per account/region)
 cdk bootstrap aws://197496953931/eu-central-1

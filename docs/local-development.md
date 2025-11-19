@@ -4,12 +4,31 @@ Use this checklist to validate changes before opening a pull request or pushing 
 
 ## 1. Prerequisites
 - Install AWS CDK CLI: `npm install -g aws-cdk`
-- Install Python 3.12+ and pip
-- Install Python dependencies: `pip install -r requirements.txt`
+- Install Python 3.12+ and package manager (`pip` or `uv`)
+- Install Python dependencies:
+  - Using `uv` (recommended): `uv pip install -r requirements.txt`
+  - Using `pip`: `pip install -r requirements.txt`
 - Configure AWS credentials via `~/.aws/credentials` or environment variables
 - Ensure you have permissions to create VPC, EC2, Lambda, IAM, CloudFormation resources
 
 ## 2. Formatting & Linting
+
+### Using Pre-commit (Recommended)
+
+Pre-commit hooks automatically format and validate code before commits:
+
+```bash
+# Install pre-commit hooks (one-time setup)
+pre-commit install
+
+# Run hooks manually on all files
+pre-commit run --all-files
+```
+
+See `docs/pre-commit-setup.md` for detailed setup instructions.
+
+### Manual Formatting & Linting
+
 Run from the repository root:
 
 ```bash

@@ -133,15 +133,32 @@ This project is part of a **technical assessment** focused on architectural reas
    ```
 
 2. **Install Python dependencies**
+
+   Using `uv` (recommended, faster):
+   ```bash
+   # Install uv: https://github.com/astral-sh/uv
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   
+   # Install dependencies
+   uv pip install -r requirements.txt
+   ```
+
+   Or using `pip`:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configure AWS credentials**
+3. **Setup pre-commit hooks (recommended)**
+   ```bash
+   pre-commit install
+   ```
+   This ensures code is formatted and validated before commits. See `docs/pre-commit-setup.md` for details.
+
+4. **Configure AWS credentials**
    - Set up AWS credentials via `~/.aws/credentials` or environment variables
    - Ensure you have permissions to create VPC, EC2, Lambda, IAM, CloudFormation resources
 
-4. **Create KMS Key (Recommended for Demos)**
+5. **Create KMS Key (Recommended for Demos)**
    ```bash
    # Create persistent KMS key (one-time, reuse across deployments)
    aws kms create-key \

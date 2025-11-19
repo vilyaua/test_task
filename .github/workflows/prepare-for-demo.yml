@@ -1,19 +1,6 @@
 name: Prepare for Demo
 
 on:
-  push:
-    branches: [ main, development ]
-    paths:
-      - 'infra/**'
-      - 'docs/**'
-      - '.github/workflows/prepare-for-demo.yml'
-      - 'README.md'
-  pull_request:
-    paths:
-      - 'infra/**'
-      - 'docs/**'
-      - '.github/workflows/prepare-for-demo.yml'
-      - 'README.md'
   workflow_dispatch:
     inputs:
       run_demo:
