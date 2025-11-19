@@ -59,9 +59,20 @@ pre-commit run pylint --all-files
 
 ### Skip Hooks (Not Recommended)
 
+**When to skip:** Only when absolutely necessary (e.g., emergency fixes, fixing hook configuration itself, or when hooks are incorrectly blocking valid code).
+
 ```bash
-# Skip hooks for a single commit (use sparingly)
-git commit --no-verify -m "Emergency fix"
+# Skip hooks for a single commit
+git commit --no-verify -m "Your commit message"
+
+# Alternative: use -n flag (shorthand)
+git commit -n -m "Your commit message"
+```
+
+**Warning:** Skipping hooks bypasses code quality checks. Always fix issues and re-run hooks afterward:
+```bash
+# After skipping, manually run hooks to verify
+pre-commit run --all-files
 ```
 
 ## Configured Hooks

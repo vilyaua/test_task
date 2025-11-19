@@ -25,6 +25,8 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+**Skip hooks if needed:** `git commit --no-verify -m "message"` (use sparingly, then run `pre-commit run --all-files` afterward)
+
 See `docs/pre-commit-setup.md` for detailed setup instructions.
 
 ### Manual Formatting & Linting

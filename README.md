@@ -153,6 +153,8 @@ This project is part of a **technical assessment** focused on architectural reas
    pre-commit install
    ```
    This ensures code is formatted and validated before commits. See `docs/pre-commit-setup.md` for details.
+   
+   **Skip hooks if needed:** `git commit --no-verify -m "message"` (use sparingly)
 
 4. **Configure AWS credentials**
    - Set up AWS credentials via `~/.aws/credentials` or environment variables
