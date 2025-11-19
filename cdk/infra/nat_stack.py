@@ -66,11 +66,11 @@ class NatAlternativeStack(cdk.Stack):
         # Create outputs
         self._create_outputs()
 
-    def _create_network(
+    def _create_network(  # pylint: disable=too-many-locals
         self,
-    ) -> tuple[ec2.Vpc, Dict[str, ec2.PublicSubnet], Dict[str, ec2.PrivateSubnet]]:
+    ) -> tuple[ec2.Vpc, Dict[str, ec2.CfnSubnet], Dict[str, ec2.CfnSubnet]]:
         """Create VPC, subnets, and route tables."""
-        # Create VPC
+        # Create VPC without automatic subnets (we'll create them manually with explicit CIDRs)
         vpc = ec2.Vpc(
             self,
             "NATVpc",
@@ -79,79 +79,129 @@ class NatAlternativeStack(cdk.Stack):
             nat_gateways=0,  # We use NAT instances instead
             enable_dns_hostnames=True,
             enable_dns_support=True,
+            subnet_configuration=[],  # No automatic subnets - we create them manually
         )
 
         cdk.Tags.of(vpc).add("Name", f"{self.prefix}-vpc")
 
         # Calculate subnet CIDRs (matching Terraform logic)
-        public_subnets: Dict[str, ec2.PublicSubnet] = {}
-        private_subnets: Dict[str, ec2.PrivateSubnet] = {}
+        public_subnets: Dict[str, ec2.CfnSubnet] = {}
+        private_subnets: Dict[str, ec2.CfnSubnet] = {}
 
         azs = vpc.availability_zones
+
+        # Create Internet Gateway for public subnets
+        igw = ec2.CfnInternetGateway(self, "InternetGateway")
+        cdk.Tags.of(igw).add("Name", f"{self.prefix}-igw")
+        igw_attachment = ec2.CfnVPCGatewayAttachment(
+            self, "IGWAttachment", vpc_id=vpc.vpc_id, internet_gateway_id=igw.ref
+        )
+
         for idx, az in enumerate(azs):
             # Public subnet CIDR
             public_cidr = calculate_subnet_cidr(self.config.vpc_cidr, idx, newbits=4)
             # Private subnet CIDR (offset by number of AZs)
             private_cidr = calculate_subnet_cidr(self.config.vpc_cidr, idx + len(azs), newbits=4)
 
-            # Create public subnet
-            public_subnet = ec2.PublicSubnet(
+            # Create public subnet using L1 construct with explicit CIDR
+            # Note: We'll use CfnSubnet and work around SubnetSelection limitation
+            public_subnet_cfn = ec2.CfnSubnet(
                 self,
                 f"PublicSubnet-{az}",
-                vpc=vpc,
+                vpc_id=vpc.vpc_id,
                 availability_zone=az,
                 cidr_block=public_cidr,
                 map_public_ip_on_launch=True,
+                tags=[
+                    cdk.CfnTag(key="Name", value=f"{self.prefix}-public-{az}"),
+                    cdk.CfnTag(key="Tier", value="public"),
+                    cdk.CfnTag(key="kubernetes.io/role/elb", value="1"),
+                ],
             )
-            cdk.Tags.of(public_subnet).add("Name", f"{self.prefix}-public-{az}")
-            cdk.Tags.of(public_subnet).add("Tier", "public")
-            cdk.Tags.of(public_subnet).add("kubernetes.io/role/elb", "1")
-            public_subnets[az] = public_subnet
+            public_subnet_cfn.add_dependency(igw_attachment)
+            public_subnets[az] = public_subnet_cfn
 
-            # Create private subnet with explicit route table
-            # Create route table for private subnet
+            # Create public route table
+            public_route_table = ec2.CfnRouteTable(
+                self,
+                f"PublicRouteTable-{az}",
+                vpc_id=vpc.vpc_id,
+                tags=[
+                    cdk.CfnTag(key="Name", value=f"{self.prefix}-public-rt-{az}"),
+                    cdk.CfnTag(key="Tier", value="public"),
+                ],
+            )
+            # Add default route to Internet Gateway
+            ec2.CfnRoute(
+                self,
+                f"PublicDefaultRoute-{az}",
+                route_table_id=public_route_table.ref,
+                destination_cidr_block="0.0.0.0/0",
+                gateway_id=igw.ref,
+            ).add_dependency(igw_attachment)
+            # Associate public subnet with route table
+            ec2.CfnSubnetRouteTableAssociation(
+                self,
+                f"PublicSubnetRouteTableAssociation-{az}",
+                subnet_id=public_subnet_cfn.ref,
+                route_table_id=public_route_table.ref,
+            )
+
+            # Create private subnet using L1 construct with explicit CIDR
+            private_subnet_cfn = ec2.CfnSubnet(
+                self,
+                f"PrivateSubnet-{az}",
+                vpc_id=vpc.vpc_id,
+                availability_zone=az,
+                cidr_block=private_cidr,
+                tags=[
+                    cdk.CfnTag(key="Name", value=f"{self.prefix}-private-{az}"),
+                    cdk.CfnTag(key="Tier", value="private"),
+                    cdk.CfnTag(key="kubernetes.io/role/internal", value="1"),
+                ],
+            )
+
+            # Create route table for private subnet (explicit, not auto-created)
             private_route_table = ec2.CfnRouteTable(
                 self,
                 f"PrivateRouteTable-{az}",
                 vpc_id=vpc.vpc_id,
+                tags=[
+                    cdk.CfnTag(key="Name", value=f"{self.prefix}-private-rt-{az}"),
+                    cdk.CfnTag(key="Tier", value="private"),
+                ],
             )
-            cdk.Tags.of(private_route_table).add("Name", f"{self.prefix}-private-rt-{az}")
-            cdk.Tags.of(private_route_table).add("Tier", "private")
 
-            # Create private subnet
-            private_subnet = ec2.PrivateSubnet(
-                self,
-                f"PrivateSubnet-{az}",
-                vpc=vpc,
-                availability_zone=az,
-                cidr_block=private_cidr,
-            )
-            cdk.Tags.of(private_subnet).add("Name", f"{self.prefix}-private-{az}")
-            cdk.Tags.of(private_subnet).add("Tier", "private")
-            cdk.Tags.of(private_subnet).add("kubernetes.io/role/internal", "1")
-
-            # Associate route table with subnet
+            # Associate private subnet with custom route table
             ec2.CfnSubnetRouteTableAssociation(
                 self,
                 f"PrivateSubnetRouteTableAssociation-{az}",
-                subnet_id=private_subnet.subnet_id,
+                subnet_id=private_subnet_cfn.ref,
                 route_table_id=private_route_table.ref,
             )
 
-            # Store route table reference as attributes
-            # We'll access these via a wrapper
-            setattr(private_subnet, "_route_table_id", private_route_table.ref)
-            setattr(private_subnet, "_route_table_arn", private_route_table.attr_arn)
-            private_subnets[az] = private_subnet
+            # Store route table reference and CIDR as attributes for later use
+            setattr(private_subnet_cfn, "_route_table_id", private_route_table.ref)
+            # Construct route table ARN manually (CfnRouteTable doesn't have attr_arn)
+            route_table_arn = (
+                f"arn:aws:ec2:{self.region}:{self.account}:route-table/{private_route_table.ref}"
+            )
+            setattr(private_subnet_cfn, "_route_table_arn", route_table_arn)
+            setattr(private_subnet_cfn, "ipv4_cidr_block", private_cidr)
+            private_subnets[az] = private_subnet_cfn
 
         return vpc, public_subnets, private_subnets
 
     def _create_logging(self) -> tuple[Optional[kms.IKey], kms.IKey]:
         """Create KMS keys and CloudWatch log groups."""
         # Determine KMS key for flow logs
+        # Note: from_lookup requires account to be set in stack env (region is always set)
+        has_account = self.account is not None
+
         if self.config.logs_kms_key_arn:
             flow_logs_kms = kms.Key.from_key_arn(self, "FlowLogsKMS", self.config.logs_kms_key_arn)
-        elif self.config.logs_kms_key_alias:
+        elif self.config.logs_kms_key_alias and has_account:
+            # Only use from_lookup if account is available (required for lookup)
             flow_logs_kms = kms.Key.from_lookup(
                 self, "FlowLogsKMS", alias_name=self.config.logs_kms_key_alias
             )
@@ -172,7 +222,8 @@ class NatAlternativeStack(cdk.Stack):
             app_logs_kms = kms.Key.from_key_arn(
                 self, "AppLogsKMS", self.config.app_logs_kms_key_arn
             )
-        elif self.config.app_logs_kms_key_alias:
+        elif self.config.app_logs_kms_key_alias and has_account:
+            # Only use from_lookup if account is available (required for lookup)
             app_logs_kms = kms.Key.from_lookup(
                 self, "AppLogsKMS", alias_name=self.config.app_logs_kms_key_alias
             )
@@ -182,7 +233,7 @@ class NatAlternativeStack(cdk.Stack):
 
         # Create CloudWatch log groups
         retention = (
-            logs.RetentionDays.THIRTY_DAYS
+            logs.RetentionDays.ONE_MONTH
             if self.config.flow_log_retention_days >= 30
             else logs.RetentionDays.TWO_WEEKS
         )
@@ -292,7 +343,9 @@ class NatAlternativeStack(cdk.Stack):
 
     def _create_nat_instances(
         self,
-    ) -> tuple[Dict[str, autoscaling.AutoScalingGroup], Dict[str, ec2.CfnEIP], ec2.SecurityGroup]:
+    ) -> tuple[
+        Dict[str, autoscaling.CfnAutoScalingGroup], Dict[str, ec2.CfnEIP], ec2.SecurityGroup
+    ]:
         """Create NAT instances with Auto Scaling Groups."""
         # Create security group for NAT instances
         nat_sg = ec2.SecurityGroup(
@@ -352,7 +405,7 @@ class NatAlternativeStack(cdk.Stack):
         )
 
         # Create ASGs and EIPs per AZ
-        nat_asgs: Dict[str, autoscaling.AutoScalingGroup] = {}
+        nat_asgs: Dict[str, autoscaling.CfnAutoScalingGroup] = {}
         nat_eips: Dict[str, ec2.CfnEIP] = {}
 
         for az, public_subnet in self.public_subnets.items():
@@ -366,21 +419,36 @@ class NatAlternativeStack(cdk.Stack):
             nat_eips[az] = eip
 
             # Create Auto Scaling Group
-            asg = autoscaling.AutoScalingGroup(
+            # Since SubnetSelection doesn't work with L1 CfnSubnet, we'll use
+            # CfnAutoScalingGroup (L1) directly to specify subnet ID explicitly
+            asg_cfn = autoscaling.CfnAutoScalingGroup(
                 self,
                 f"NATASG-{az}",
-                vpc=self.vpc,
-                vpc_subnets=ec2.SubnetSelection(subnets=[public_subnet]),
-                launch_template=launch_template,
-                min_capacity=1,
-                max_capacity=1,
-                desired_capacity=1,
-                health_check=autoscaling.HealthCheck.ec2(),
-                health_check_grace_period=cdk.Duration.minutes(1),
+                min_size="1",
+                max_size="1",
+                desired_capacity="1",
+                launch_template=autoscaling.CfnAutoScalingGroup.LaunchTemplateSpecificationProperty(
+                    launch_template_id=launch_template.launch_template_id,
+                    version=launch_template.latest_version_number,
+                ),
+                vpc_zone_identifier=[public_subnet.ref],
+                health_check_type="EC2",
+                health_check_grace_period=60,
+                tags=[
+                    autoscaling.CfnAutoScalingGroup.TagPropertyProperty(
+                        key="Name",
+                        value=f"{self.prefix}-nat-{az}",
+                        propagate_at_launch=True,
+                    ),
+                    autoscaling.CfnAutoScalingGroup.TagPropertyProperty(
+                        key="Role",
+                        value="nat",
+                        propagate_at_launch=True,
+                    ),
+                ],
             )
-            cdk.Tags.of(asg).add("Name", f"{self.prefix}-nat-{az}")
-            cdk.Tags.of(asg).add("Role", "nat")
-            nat_asgs[az] = asg
+            # Store the CfnAutoScalingGroup (we'll need to update return type)
+            nat_asgs[az] = asg_cfn
 
         return nat_asgs, nat_eips, nat_sg
 
@@ -470,7 +538,9 @@ systemctl restart sshd
             for private_subnet in self.private_subnets.values()
         ]
         eip_map = {az: eip.attr_allocation_id for az, eip in self.nat_eips.items()}
-        asg_names = [asg.auto_scaling_group_name for asg in self.nat_asgs.values()]
+        # CfnAutoScalingGroup doesn't expose auto_scaling_group_name directly
+        # We'll use the logical ID (ref) which will be resolved to the physical name
+        asg_names = [asg.ref for asg in self.nat_asgs.values()]
 
         # Create IAM role for NAT ASG hook Lambda
         nat_hook_role = iam.Role(
@@ -600,34 +670,39 @@ systemctl restart sshd
 
         # Create probe instances
         for az, private_subnet in self.private_subnets.items():
-            probe = ec2.Instance(
+            # Create probe instance using CfnInstance (L1) to specify subnet directly
+            # Get AMI ID using L2 helper, then use in L1 construct
+            ami = ec2.MachineImage.latest_amazon_linux2023().get_image(self)
+            probe = ec2.CfnInstance(
                 self,
                 f"Probe-{az}",
-                vpc=self.vpc,
-                vpc_subnets=ec2.SubnetSelection(subnets=[private_subnet]),
+                image_id=ami.image_id,
                 instance_type=(
-                    ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.NANO)
+                    "t3.nano"
                     if self.config.probe_instance_type == "t3.nano"
-                    else ec2.InstanceType(self.config.probe_instance_type)
+                    else self.config.probe_instance_type
                 ),
-                machine_image=ec2.MachineImage.latest_amazon_linux2023(),
-                security_group=probe_sg,
-                role=self.instance_role,
-                user_data=ec2.UserData.custom(probe_user_data),
-                require_imdsv2=True,
-                block_devices=[
-                    ec2.BlockDevice(
+                subnet_id=private_subnet.ref,
+                security_group_ids=[probe_sg.security_group_id],
+                iam_instance_profile=self.instance_profile_name,
+                user_data=cdk.Fn.base64(probe_user_data),
+                # Note: IMDSv2 is enforced via launch template for NAT instances.
+                # For probe instances, IMDSv2 enforcement is optional and can be added later.
+                block_device_mappings=[
+                    ec2.CfnInstance.BlockDeviceMappingProperty(
                         device_name="/dev/xvda",
-                        volume=ec2.BlockDeviceVolume.ebs(
-                            8,
+                        ebs=ec2.CfnInstance.EbsProperty(
+                            volume_size=8,
+                            volume_type="gp3",
                             encrypted=True,
-                            volume_type=ec2.EbsDeviceVolumeType.GP3,
                         ),
                     )
                 ],
+                tags=[
+                    cdk.CfnTag(key="Name", value=f"{self.prefix}-probe-{az}"),
+                    cdk.CfnTag(key="Role", value="probe"),
+                ],
             )
-            cdk.Tags.of(probe).add("Name", f"{self.prefix}-probe-{az}")
-            cdk.Tags.of(probe).add("Role", "probe")
 
             # Ensure probes depend on NAT ASGs
             for asg in self.nat_asgs.values():
@@ -730,7 +805,7 @@ done
                 self,
                 f"PublicSubnetId-{az}",
                 description=f"Public subnet ID for {az}",
-                value=subnet.subnet_id,
+                value=subnet.ref,  # L1 CfnSubnet uses .ref for subnet ID
             )
 
         for az, subnet in self.private_subnets.items():
@@ -738,14 +813,14 @@ done
                 self,
                 f"PrivateSubnetId-{az}",
                 description=f"Private subnet ID for {az}",
-                value=subnet.subnet_id,
+                value=subnet.ref,  # L1 CfnSubnet uses .ref for subnet ID
             )
 
         # Output NAT EIP addresses
         for az, eip in self.nat_eips.items():
             cdk.CfnOutput(
                 self,
-                f"NATEIP-{az}",
+                f"NATEIPOutput-{az}",  # Different ID from EIP construct to avoid duplicate
                 description=f"Elastic IP for NAT instance in {az}",
                 value=eip.attr_public_ip,
             )

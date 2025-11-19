@@ -22,12 +22,15 @@ else:
     config = TestConfig()
 
 # Create stack
+# Get account from environment variable (may be None during bootstrap)
+account = os.getenv("CDK_DEFAULT_ACCOUNT")
+# Always set region, account is optional (for bootstrap)
 stack = NatAlternativeStack(
     app,
     f"NatAlternative{env_name.capitalize()}",
     config=config,
     env=cdk.Environment(
-        account=os.getenv("CDK_DEFAULT_ACCOUNT"),
+        account=account,
         region=config.aws_region,
     ),
 )
